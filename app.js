@@ -80,27 +80,17 @@ const BLOCK_PALETTES = [
   {key:'mono',   name:'Mono',           hint:'icons do the talking',    hex:['#E7E2D6','#E7E2D6','#E7E2D6','#E7E2D6','#E7E2D6','#E7E2D6']},
 ];
 const blockPalByKey = k => BLOCK_PALETTES.find(p=>p.key===k) || BLOCK_PALETTES[0];
-/* the build-my-own picker — an unbiased hue wheel, 4 shades per hue (dark → lightest) */
-function hslHex(h,s,l){
-  s/=100; l/=100;
-  const k = n => (n + h/30) % 12;
-  const a = s * Math.min(l, 1-l);
-  const f = n => l - a * Math.max(-1, Math.min(k(n)-3, Math.min(9-k(n), 1)));
-  return '#'+[f(0),f(8),f(4)].map(v=>Math.round(v*255).toString(16).padStart(2,'0')).join('');
-}
-const PICKER_HUES = [
-  {name:'Red',     h:5},   {name:'Orange',  h:28},
-  {name:'Amber',   h:45},  {name:'Yellow',  h:60},
-  {name:'Lime',    h:90},  {name:'Green',   h:135},
-  {name:'Teal',    h:168}, {name:'Cyan',    h:190},
-  {name:'Blue',    h:215}, {name:'Indigo',  h:245},
-  {name:'Purple',  h:275}, {name:'Magenta', h:305},
-  {name:'Pink',    h:335}, {name:'Brown',   h:24, brown:true},
+/* the build-my-own picker — founder-supplied flat-UI swatches arranged as a spectrum,
+   ending in a paper → grey → ink neutral ramp */
+const PICKER_COLORS = [
+  '#CD4760','#802F35','#802D3F','#CD9181','#E84C3D','#CE7057','#CE4C4C','#D45729',
+  '#C23A2C','#805B53','#7F4537','#CCB394','#E4C15B','#CF8552','#F59D1F','#E77E23',
+  '#F0C514','#B39147','#805334','#6FC387','#4ABA70','#26AF5F','#4B8056','#81CCB9',
+  '#1AB99B','#517F72','#20A286','#86B6CD','#67BACD','#3597D4','#2581BC','#547480',
+  '#427681','#8798CC','#4383C3','#275680','#7D649B','#3F324E','#975BA5','#894B9E',
+  '#CD66A5','#80426B','#FDFBF7','#F8F6F2','#EFE8DA','#EEF3F6','#BDC2C8','#93A5A5',
+  '#808E8D','#7F6E5D','#55607E','#33414D','#34495E','#2D3E50','#232E37','#141B21',
 ];
-const PICKER_COLORS = PICKER_HUES.flatMap(({h,brown}) => brown
-  ? [hslHex(h,38,26), hslHex(h,36,42), hslHex(h,34,62), hslHex(h,32,82)]
-  : [hslHex(h,52,34), hslHex(h,56,54), hslHex(h,60,72), hslHex(h,64,87)]
-).concat([hslHex(210,8,25), hslHex(210,7,48), hslHex(210,7,70), hslHex(210,8,88)]); // greys
 /* re-base every color to the chosen palette by slot order (custom hexes get replaced) */
 function applyBlockPalette(key, colors, customHexes){
   if(key==='custom'){
@@ -147,7 +137,7 @@ function openCustomPicker(getSel, setSel, onComplete, onClose){
   };
   Sheet.open(`
     <h3 style="margin-bottom:2px">Build your palette</h3>
-    <p class="muted" style="font-size:13.5px;margin:0 0 12px">Tap any six — dark to lightest, every hue. Tap a pick again to drop it.</p>
+    <p class="muted" style="font-size:13.5px;margin:0 0 12px">Tap any six — the whole spectrum, paper to ink. Tap a pick again to drop it.</p>
     <div class="pal-dots cb-preview" id="cbpPreview"></div>
     <div class="cb-grid" id="cbpGrid">
       ${PICKER_COLORS.map(h=>`<button class="cb-sw" data-h="${h}" style="background:${h}" aria-label="${h}"></button>`).join('')}
@@ -295,7 +285,7 @@ let S = null;
 function defaults(){
   return {
     version:1, onboarded:false,
-    settings:{voice:'zesty', roundupTime:'20:30', sound:true, theme:'light', weekStartsOn:1, notifAsked:false},
+    settings:{voice:'zesty', roundupTime:'20:30', sound:true, theme:'dark', weekStartsOn:1, notifAsked:false},
     colors:[],   // {id,name,icon,pal,shape,goal}
     buckets:[],  // {id,colorId,name,notes,chips:null|{target,countsAt}}
     week:{start:null, blocks:[], chips:{}}, // blocks: {id,colorId,status,via,ts} chips: {bucketId:{'YYYY-MM-DD':n}}

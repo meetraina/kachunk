@@ -30,7 +30,7 @@
   --hero-d:#22303A;
   --hero-ink:#F8F6F2;
   --mark:#DD7C54;         /* terracotta — accents */
-  --aqua:#7E9B95;         /* neutral aqua — the mark block */
+  --aqua:#8FB0BC;         /* the mark block — light blue-aqua */
   --mark-d:#B95F3D;
   --honey:#DFC289;        /* wordmark period + small accents */
   --good:#6F8F74;
@@ -171,13 +171,11 @@ h1,h2,h3{font-family:"Bricolage Grotesque",system-ui,sans-serif; font-weight:700
 .cb-preview{margin:0 0 12px; gap:7px; justify-content:center;}
 .cb-preview i{width:26px; height:26px; border-radius:8px;}
 .cb-grid{display:grid; grid-template-columns:repeat(8,1fr); gap:6px; max-height:46vh; overflow-y:auto; padding:2px;}
-.cb-grid > :nth-child(8n+4), .cb-grid > :nth-child(8n){margin-right:0;}
-.cb-grid > :nth-child(8n+1), .cb-grid > :nth-child(8n+5){border-top-left-radius:12px; border-bottom-left-radius:12px;}
-.cb-grid > :nth-child(8n+4), .cb-grid > :nth-child(8n+8){border-top-right-radius:12px; border-bottom-right-radius:12px;}
 .cb-sw{
-  appearance:none; border:none; cursor:pointer; aspect-ratio:1; border-radius:7px;
+  appearance:none; border:none; cursor:pointer; aspect-ratio:1; border-radius:11px;
   box-shadow:inset 0 -3px 0 rgba(51,65,77,.14); min-width:0;
 }
+.cb-sw[data-h="#FDFBF7"], .cb-sw[data-h="#F8F6F2"], .cb-sw[data-h="#EFE8DA"], .cb-sw[data-h="#EEF3F6"]{box-shadow:inset 0 0 0 1px var(--hairline), inset 0 -3px 0 rgba(51,65,77,.08);}
 .cb-sw.on{outline:2.5px solid var(--mark); outline-offset:1.5px; position:relative; z-index:1;}
 .cb-any{
   grid-column:span 4; aspect-ratio:auto; position:relative; cursor:pointer; min-height:34px;
