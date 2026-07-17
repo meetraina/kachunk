@@ -66,13 +66,26 @@
     <p class="small muted" style="margin:4px 0 0">Pattern credits: phase lifecycle (Asana product-dev template) · health + staleness chip (Linear project updates) · single-page drill-down (Notion).</p>
   </div>
 
-  <!-- 3 · Now / Next / Later -->
+  <!-- 3 · Founder queue -->
+  <h2>Founder queue — tomorrow <span class="muted" style="font-size:14px">(in order; ~2 focused hours to "moving toward live")</span></h2>
+  <div class="card">
+    <ul class="checklist">
+      <li><strong>Gate G-1 (30 min):</strong> USPTO knockout at <span class="mono">tmsearch.uspto.gov</span> — KACHUNK + phonetic variants (KACHUNCK, KA-CHUNK, CACHUNK), classes 9 &amp; 42. Screenshot results. Everything below waits on this.</li>
+      <li><strong>Buy kachunk.app (~$14, 10 min):</strong> Cloudflare Registrar → add CNAME to the repo → Pages custom domain → enforce HTTPS. Check kachunk.com while you're there.</li>
+      <li><strong>Register the handles (30 min, $0):</strong> @kachunkapp on TikTok, Instagram, YouTube, X; u/kachunkapp; Product Hunt product page; hello@ via Cloudflare Email Routing. Same avatar (icon-512), same one-line bio.</li>
+      <li><strong>Live-device pass (20 min):</strong> full onboarding → week of play → sweep on your phone; screenshot anything off. You've been doing this — one clean pass on the final build.</li>
+      <li><strong>Send it to 5 people (10 min):</strong> the PWA link, no pitch, just "throw the blocks around and tell me what confused you." First outside eyes before any store spend.</li>
+      <li><strong>Start the Google Cloud OAuth consent screen ($0, 15 min):</strong> longest external lead time in the whole plan — the review queue runs days-to-weeks, so file it now even though sync ships later.</li>
+    </ul>
+    <p class="small muted">Deliberately NOT tomorrow: store fees ($25 Play) until G-1 clears and the 5-person feedback lands; the TWA wrapper; any paid anything.</p>
+  </div>
+
+  <!-- 3b · Now / Next / Later -->
   <h2>Now / Next / Later</h2>
   <div class="lanes">
     <div class="card lane">
       <h3><span class="badge active">NOW</span></h3>
-      <div class="cardlet"><strong>Ship to GitHub Pages</strong>Create public repo via browser, upload build, enable Pages, verify live URL.<span class="ie">impact ●●● · effort ●</span></div>
-      <div class="cardlet"><strong>Live-device pass</strong>Walk every screen on the deployed URL; screenshot for the case study.<span class="ie">impact ●●● · effort ●</span></div>
+      <div class="cardlet"><strong>Founder queue above</strong>G-1 → domain → handles → device pass → 5 humans → OAuth screen.<span class="ie">impact ●●● · effort ●●</span></div>
     </div>
     <div class="card lane">
       <h3><span class="badge queued">NEXT</span></h3>
@@ -125,6 +138,8 @@
     <tr><td class="mono">D-17</td><td><strong>Theme is app-controlled: light default + designed dark toggle</strong></td><td>Browser force-dark was inverting surfaces (founder QA on device). App opts out (<span class="mono">color-scheme: only light</span>) and ships its own dark palette behind Settings → Appearance.</td><td><span class="badge done">LOCKED</span></td></tr>
     <tr><td class="mono">D-18</td><td><strong>Selectable block palettes, brand set default</strong></td><td>Founder: pastel default read washed out. Five palettes (Kachunk brand · Pretty pastels · Toy box · Greyscale · Mono/icons-only), picked in onboarding and switchable in Settings; blocks re-base by slot order.</td><td><span class="badge done">LOCKED</span></td></tr>
     <tr><td class="mono">D-19</td><td><strong>Terracotta carries every primary action</strong></td><td>Founder: make the terracotta stand out. CTAs and active toggles moved from ink to terracotta; selection hairlines already were.</td><td><span class="badge done">LOCKED</span></td></tr>
+    <tr><td class="mono">D-20</td><td><strong>Price: $5.99 one-time, $3.99 launch week, $7.99 after sync+widgets</strong></td><td>Streaks precedent, subscription-fatigue positioning ("no ADHD tax"), zero server costs. Full rationale in the <a href="store.html">Store plan</a>.</td><td><span class="badge done">LOCKED</span></td></tr>
+    <tr><td class="mono">D-21</td><td><strong>Mechanic novelty verified (2026-07-17 sweep)</strong></td><td>No app found doing physics-simulated blocks tossed into buckets. Nearest: "Blocks — Minimal Habit Tracker" (flat tap-grid), Finch/Habitica (creature/RPG), Tiimo (visual planner). 3D-printed physical trackers exist — demand for tactile is real, software supply is absent. Re-verify quarterly.</td><td><span class="badge active">HOLDS</span></td></tr>
   </table>
 
   <!-- 6 · Asset registry -->
