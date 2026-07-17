@@ -37,6 +37,7 @@ const ICONS = {
   cloud:  '<path d="M7 18.5a4.5 4.5 0 01-.4-9A6 6 0 0118.2 11a3.8 3.8 0 01-.7 7.5H7z"/>',
   download:'<path d="M12 3.5v11M7.5 10l4.5 4.5L16.5 10M4.5 20.5h15"/>',
   upload: '<path d="M12 14.5v-11M7.5 8L12 3.5 16.5 8M4.5 20.5h15"/>',
+  trash:  '<path d="M4.5 6.5h15M9.5 6.5V4.8a1.3 1.3 0 011.3-1.3h2.4a1.3 1.3 0 011.3 1.3v1.7M6.5 6.5l.8 12.2a2 2 0 002 1.8h5.4a2 2 0 002-1.8l.8-12.2M10 10.5v6M14 10.5v6"/>',
 };
 const ic = (name, cls='') => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]||ICONS.star}</svg>`;
 
@@ -65,6 +66,30 @@ function shade(hex, pct){
 function palFor(c){
   if(c && c.customHex) return {key:'custom', name:'Custom', fill:c.customHex, edge:shade(c.customHex,-0.34), light:shade(c.customHex,0.30)};
   return palByKey(c && c.pal);
+}
+
+/* ── block color palettes — pick one, blocks re-base by slot order ── */
+const BLOCK_PALETTES = [
+  {key:'brand',  name:'Kachunk',        hint:'the brand colors',        hex:['#7C93A5','#DD7C54','#DFC289','#7E9B95','#C98D7E','#85A88E']},
+  {key:'pastel', name:'Pretty pastels', hint:'soft & barely there',     hex:PALETTE.map(p=>p.fill)},
+  {key:'bright', name:'Toy box',        hint:'louder, board-game pop',  hex:['#4E8AC8','#E2574C','#F2A93B','#3FA06E','#8A64C8','#E56FA1']},
+  {key:'grey',   name:'Greyscale',      hint:'zero color noise',        hex:['#D9D6CF','#BDB9B1','#A19D94','#858179','#6C6862','#524F4A']},
+  {key:'mono',   name:'Mono',           hint:'icons do the talking',    hex:['#E7E2D6','#E7E2D6','#E7E2D6','#E7E2D6','#E7E2D6','#E7E2D6']},
+];
+const blockPalByKey = k => BLOCK_PALETTES.find(p=>p.key===k) || BLOCK_PALETTES[0];
+/* re-base every color to the chosen palette by slot order (custom hexes get replaced) */
+function applyBlockPalette(key, colors){
+  const bp = blockPalByKey(key);
+  colors.forEach((c,i)=>{
+    if(key==='pastel'){ c.customHex = null; c.pal = PALETTE[i%6].key; }
+    else c.customHex = bp.hex[i%6];
+  });
+}
+function palCardHTML(bp, on){
+  return `<button class="pal-card ${on?'on':''}" data-bp="${bp.key}">
+    <span><span class="pc-name">${bp.name}</span><span class="pc-hint">${bp.hint}</span></span>
+    <span class="pal-dots">${bp.hex.map(h=>`<i style="background:${h};box-shadow:inset 0 -3px 0 ${shade(h,-0.22)}"></i>`).join('')}</span>
+  </button>`;
 }
 
 const SHAPES = [
@@ -200,7 +225,7 @@ let S = null;
 function defaults(){
   return {
     version:1, onboarded:false,
-    settings:{voice:'zesty', roundupTime:'20:30', sound:true, weekStartsOn:1, notifAsked:false},
+    settings:{voice:'zesty', roundupTime:'20:30', sound:true, theme:'light', weekStartsOn:1, notifAsked:false},
     colors:[],   // {id,name,icon,pal,shape,goal}
     buckets:[],  // {id,colorId,name,notes,chips:null|{target,countsAt}}
     week:{start:null, blocks:[], chips:{}}, // blocks: {id,colorId,status,via,ts} chips: {bucketId:{'YYYY-MM-DD':n}}
@@ -355,10 +380,10 @@ const OB = {
   draft:null,
   start(){
     this.step = 0;
-    this.draft = { name:'', colors: [], roundupTime:'20:30', voice:'zesty', maxSlots:8 };
+    this.draft = { name:'', colors: [], palKey:'brand', roundupTime:'20:30', voice:'zesty', maxSlots:8 };
     show('#screen-onboard'); this.render();
   },
-  steps(){ return ['name','pick', ...this.draft.colors.map((c,i)=>'bucket:'+i), 'recap','voice']; },
+  steps(){ return ['name','pick','palette', ...this.draft.colors.map((c,i)=>'bucket:'+i), 'recap','voice']; },
   weeklyGoalSlots(){ return this.draft.colors.reduce((a,c)=>a+(c.goal*(c.slots||1)),0); },
 
   paint(bg, inkOverride){
@@ -414,6 +439,21 @@ const OB = {
       };
     }
 
+    if(key==='palette'){
+      this.paint('#F8F6F2', '#33414D');
+      applyBlockPalette(d.palKey||'brand', d.colors);
+      b.innerHTML = `
+        <h2 class="ob-title">Choose your block colors</h2>
+        <p class="ob-sub">Six colors that go together. Your buckets wear them in order — you can re-pick any time in Settings.</p>
+        ${BLOCK_PALETTES.map(bp=>palCardHTML(bp, (d.palKey||'brand')===bp.key)).join('')}
+        <div class="set-note" style="padding:6px 4px">Mono makes every block the same — the icons carry the meaning.</div>`;
+      $$('#obBody .pal-card').forEach(el=>el.onclick=()=>{
+        d.palKey = el.dataset.bp;
+        applyBlockPalette(d.palKey, d.colors);
+        this.render();
+      });
+    }
+
     if(key && key.startsWith('bucket:')){
       const i = +key.split(':')[1];
       const c = d.colors[i]; if(!c){ this.step = steps.indexOf('recap'); this.render(); return; }
@@ -423,7 +463,7 @@ const OB = {
         <div class="ob-count" style="color:${inkFor(p.fill)};opacity:.65">bucket ${i+1} of ${d.colors.length}</div>
         <h2 class="ob-title">Set up ${esc(c.name)}</h2>
         <div class="bucket-card" data-c="${c.id}" style="border-color:${p.edge}">
-          <div class="bc-head"><button class="swatch" data-f="look" style="background:${p.fill};border-color:${p.edge}" title="Change look">${ic(c.icon)}</button>
+          <div class="bc-head"><button class="swatch" data-f="look" style="background:${p.fill};border-color:${p.edge};--swk:${inkFor(p.fill)}" title="Change look">${ic(c.icon)}</button>
             <input type="text" data-f="bname" value="${esc(c.name)}" aria-label="Bucket name" style="font-weight:700;font-size:17px">
           </div>
           <div class="bc-label">Blocks per week — the goal</div>
@@ -467,7 +507,7 @@ const OB = {
         <p class="ob-sub">Your goals, in day-slots — against what one of your days can hold.</p>
         <div class="paper-list">${d.colors.map(c=>{ const p = palFor(c); return `
           <div class="recap-row" style="background:${p.fill}">
-            <span class="swatch" style="background:${p.light};border:none;width:32px;height:32px;border-radius:10px">${ic(c.icon)}</span>
+            <span class="swatch" style="background:${p.light};border:none;width:32px;height:32px;border-radius:10px;--swk:${inkFor(p.light)}">${ic(c.icon)}</span>
             <strong style="flex:1;color:#33414D">${esc(c.name)}</strong>
             <span class="mono" style="font-size:12.5px;color:rgba(51,65,77,.65)">${c.goal}×/wk · ${c.slots||1} slot${(c.slots||1)>1?'s':''} = ${c.goal*(c.slots||1)}</span>
           </div>`; }).join('')}</div>
@@ -521,6 +561,7 @@ const OB = {
     S.colors = d.colors.map(c=>({id:c.id, name:c.name.trim(), icon:c.icon, pal:c.pal, customHex:c.customHex||null, shape:'cube', goal:c.goal, slotSize:c.slots||1}));
     S.buckets = d.colors.map(c=>({id:uid(), colorId:c.id, name:(c.bucketName||c.name).trim(), notes:c.notes||'', chips:c.chips||null}));
     S.settings.roundupTime = d.roundupTime; S.settings.voice = d.voice;
+    S.settings.blockPal = d.palKey||'brand';
     S.day.maxSlots = d.maxSlots;
     S.onboarded = true;
     if('Notification' in window && Notification.permission==='default' && !S.settings.notifAsked){
@@ -956,7 +997,7 @@ const Floor = {
           <ellipse cx="50" cy="32" rx="30" ry="8" fill="${p.edge}"/>
           <ellipse cx="50" cy="32" rx="24.5" ry="6" fill="rgba(43,42,58,.42)"/>
           <path d="M31.5 44 Q29.5 64 32.5 82" fill="none" stroke="${p.light}" stroke-width="5" stroke-linecap="round" opacity="0.75"/>
-          <g transform="translate(38 48) scale(1.05)" fill="none" stroke="rgba(51,65,77,.55)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${ICONS[c.icon]||ICONS.star}</g>
+          <g transform="translate(38 48) scale(1.05)" fill="none" stroke="${inkFor(p.fill)}" stroke-opacity="0.6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${ICONS[c.icon]||ICONS.star}</g>
         </svg>
         <div style="font-size:12px;font-weight:700;color:var(--ink);line-height:1.15;padding:0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(bk.name)}</div>
         <div class="mono" style="font-size:11px;color:var(--muted)">${done}/${c.goal}</div>
@@ -1308,7 +1349,7 @@ const Settings = {
   colorRow(c){
     const p = palFor(c);
     return `<div class="color-row" data-c="${c.id}">
-      <button class="swatch" style="background:${p.fill};border-color:${p.edge}" title="Change look" data-act="pal">${ic(c.icon)}</button>
+      <button class="swatch" style="background:${p.fill};border-color:${p.edge};--swk:${inkFor(p.fill)}" title="Change look" data-act="pal">${ic(c.icon)}</button>
       <input type="text" value="${esc(c.name)}" aria-label="Bucket name">
       <div class="stepper"><button data-act="-">−</button><span class="val">${c.goal}</span><button data-act="+">＋</button></div>
       <button class="row-x" data-act="x" aria-label="Remove">✕</button>
@@ -1334,6 +1375,16 @@ const Settings = {
           <div class="set-note">Kachunk sends exactly one notification a day — the Roundup — and only when the app can. On iPhone, Add to Home Screen first.</div>
         </div>
       </div>
+      <div class="set-group"><h3>Appearance</h3>
+        <div class="set-card">
+          <div class="set-row"><span class="grow">Dark mode</span>
+            <label class="switch"><input type="checkbox" id="setTheme" ${S.settings.theme==='dark'?'checked':''}><span class="knob"></span></label></div>
+        </div>
+      </div>
+      <div class="set-group"><h3>Block colors</h3>
+        ${BLOCK_PALETTES.map(bp=>palCardHTML(bp, (S.settings.blockPal||'brand')===bp.key)).join('')}
+        <div class="set-note">Switching re-bases every bucket to the new palette, in order. Custom hexes get replaced.</div>
+      </div>
       <div class="set-group"><h3>Buckets & goals</h3>
         <div id="setColors">${S.colors.map(c=>this.colorRow(c)).join('')}</div>
         <button class="btn btn-ghost" id="addColor" style="width:100%">＋ Add a bucket</button>
@@ -1344,7 +1395,7 @@ const Settings = {
           const c = S.colors.find(x=>x.id===bk.colorId); if(!c) return '';
           const p = palFor(c);
           return `<div class="bucket-card" data-b="${bk.id}">
-            <div class="bc-head"><span class="swatch" style="background:${p.fill};border-color:${p.edge}">${ic(c.icon)}</span>
+            <div class="bc-head"><span class="swatch" data-f="pal" role="button" title="Change color & icon" style="background:${p.fill};border-color:${p.edge};cursor:pointer;--swk:${inkFor(p.fill)}">${ic(c.icon)}</span>
               <input type="text" data-f="bname" value="${esc(bk.name)}"></div>
             <textarea data-f="notes" placeholder="Notes…">${esc(bk.notes)}</textarea>
             <div class="bc-label" style="margin-top:10px">Brick size — day slots</div>
@@ -1357,21 +1408,28 @@ const Settings = {
         }).join('')}
       </div>
       <div class="set-group"><h3>Your data</h3>
-        <div class="set-note" style="padding:0 2px 8px">Everything lives on this device. Export a backup any time; import it on a new phone.</div>
-        <div style="display:flex;gap:10px;margin-top:4px">
-          <button class="btn btn-ghost" id="expData" style="flex:1">${ic('download')} Export</button>
-          <button class="btn btn-ghost" id="impData" style="flex:1">${ic('upload')} Import</button>
-          <input type="file" id="impFile" accept=".json" hidden>
+        <div class="set-card">
+          <div class="set-row set-act" id="expData" role="button" tabindex="0">
+            <span class="set-ic">${ic('download')}</span><span class="grow">Export backup</span><span class="set-hint">.json</span></div>
+          <div class="set-row set-act" id="impData" role="button" tabindex="0">
+            <span class="set-ic">${ic('upload')}</span><span class="grow">Import backup</span><span class="set-hint">restores everything</span></div>
+          <div class="set-row set-act set-act-danger" id="resetAll" role="button" tabindex="0">
+            <span class="set-ic">${ic('trash')}</span><span class="grow">Start completely over</span></div>
         </div>
-      </div>
-      <div class="set-group"><h3>Danger zone</h3>
-        <button class="btn-danger" id="resetAll" style="width:100%">Start completely over</button>
+        <div class="set-note">Everything lives on this device — no account, no server. Export a backup any time; import it on a new phone.</div>
+        <input type="file" id="impFile" accept=".json" hidden>
       </div>
       <p class="muted" style="text-align:center;font-size:12px">Kachunk v1 prototype · local-first · no tracking, no server, no streaks</p>`;
     // bindings
     $$('#settingsBody .voice-card').forEach(el=>el.onclick=()=>{ S.settings.voice=el.dataset.v; save(); this.render(); toast(VOICES[el.dataset.v].sample,{ms:2600}); });
     $('#setTime').onchange = e=>{ S.settings.roundupTime = e.target.value||'20:30'; save(); Notif.updateDot(); };
     $('#setSound').onchange = e=>{ S.settings.sound = e.target.checked; save(); if(e.target.checked) sfx('tick'); };
+    $('#setTheme').onchange = e=>{ S.settings.theme = e.target.checked?'dark':'light'; save(); applyTheme(); };
+    $$('#settingsBody .pal-card').forEach(el=>el.onclick=()=>{
+      S.settings.blockPal = el.dataset.bp;
+      applyBlockPalette(el.dataset.bp, S.colors);
+      save(); this.render(); Floor.syncBuckets(); Floor.rebuild();
+    });
     $('#setSlotsM').onclick = ()=>{ S.day.maxSlots = Math.max(1,S.day.maxSlots-1); save(); $('#setSlotsV').textContent = S.day.maxSlots; };
     $('#setSlotsP').onclick = ()=>{ S.day.maxSlots = Math.min(24,S.day.maxSlots+1); save(); $('#setSlotsV').textContent = S.day.maxSlots; };
     $$('#setColors .color-row').forEach(row=>{
@@ -1390,8 +1448,9 @@ const Settings = {
     });
     $('#addColor').onclick = ()=>{
       if(S.colors.length>=6) return toast('Six buckets max — keep it holdable.');
-      const pal = PALETTE[S.colors.length%6];
-      const c = {id:uid(), name:'New thing', icon:'star', pal:pal.key, shape:'cube', goal:3, slotSize:1};
+      const bpKey = S.settings.blockPal||'brand';
+      const c = {id:uid(), name:'New thing', icon:'star', pal:PALETTE[S.colors.length%6].key,
+        customHex: bpKey==='pastel' ? null : blockPalByKey(bpKey).hex[S.colors.length%6], shape:'cube', goal:3, slotSize:1};
       S.colors.push(c);
       S.buckets.push({id:uid(), colorId:c.id, name:c.name, notes:'', chips:null});
       for(let i=0;i<c.goal;i++) S.week.blocks.push({id:uid(), colorId:c.id, status:'tray', via:null, ts:null});
@@ -1403,6 +1462,7 @@ const Settings = {
       card.querySelector('[data-f=notes]').onchange = e=>{ bk.notes = e.target.value; save(); };
       card.querySelector('[data-f=chips]').onchange = e=>{ bk.chips = e.target.checked?{target:8,countsAt:5}:null; save(); this.render(); };
       const cc = S.colors.find(x=>x.id===bk.colorId);
+      card.querySelector('[data-f="pal"]')?.addEventListener('click',()=>openColorPicker(cc, ()=>{ save(); this.render(); Floor.syncBuckets(); Floor.rebuild(); }));
       card.querySelector('[data-f="ss-"]')?.addEventListener('click',()=>{ cc.slotSize = Math.max(1,(cc.slotSize||1)-1); save(); this.render(); });
       card.querySelector('[data-f="ss+"]')?.addEventListener('click',()=>{ cc.slotSize = Math.min(8,(cc.slotSize||1)+1); save(); this.render(); });
     });
@@ -1523,8 +1583,14 @@ const Notif = {
 };
 
 /* ═════════ BOOT ═════════ */
+function applyTheme(){
+  document.documentElement.dataset.theme = S.settings.theme==='dark' ? 'dark' : 'light';
+  const m = document.querySelector('meta[name=theme-color]');
+  if(m) m.content = S.settings.theme==='dark' ? '#1E262D' : '#F8F6F2';
+}
 function boot(){
   load();
+  applyTheme();
   // week rollover check: if stored week started 7+ days ago, we do NOT auto-reset — Roundup handles it.
   document.body.addEventListener('pointerdown', ()=>{
     if(S.settings.sound) ac();
@@ -1537,7 +1603,6 @@ function boot(){
   $('#btnStart').onclick = ()=>{ if(S.onboarded){ show('#screen-floor'); Floor.rebuild(); } else OB.start(); };
   $('#obNext').onclick = ()=>OB.next();
   $('#obBack').onclick = ()=>OB.back();
-  $('#btnDay').onclick = ()=>Floor.toggleMode();
   $('#btnReceipts').onclick = ()=>Receipts.open();
   $('#fabDismiss').onclick = e=>{ e.stopPropagation(); S.settings.sweepDismissed = dayKey(); save(); $('#btnRoundup').hidden = true; };
   $('#spRestack').onclick = ()=>Floor.restackWeek();
@@ -1548,7 +1613,6 @@ function boot(){
   $('#btnRoundup').onclick = ()=>Roundup.start();
   // replace header text icons with line icons
   $('#btnReceipts').innerHTML = ic('grid');
-  $('#btnDay').innerHTML = ic('cal');
   $('#btnSettings').innerHTML = ic('gear');
   $('#receiptsBack').innerHTML = ic('back');
   $('#settingsBack').innerHTML = ic('back');

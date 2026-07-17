@@ -98,8 +98,24 @@ const LUCIDE_ICONS = {
 "utensils": "<path d=\"M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2\" /> <path d=\"M7 2v20\" /> <path d=\"M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7\" />",
 "wallet": "<path d=\"M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1\" /> <path d=\"M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4\" />",
 "waves": "<path d=\"M2 12q2.5 2 5 0t5 0 5 0 5 0\" /> <path d=\"M2 19q2.5 2 5 0t5 0 5 0 5 0\" /> <path d=\"M2 5q2.5 2 5 0t5 0 5 0 5 0\" />",
+"prayer": "<path d=\"M11.6 20.8V7.4c0-1.3-.8-2.5-2-2.9\" /> <path d=\"M12.4 20.8V7.4c0-1.3.8-2.5 2-2.9\" /> <path d=\"M8.4 18.9C6.9 17.2 6 15 6 12.7V9.2a1.2 1.2 0 0 1 2.4 0v3.2\" /> <path d=\"M15.6 18.9c1.5-1.7 2.4-3.9 2.4-6.2V9.2a1.2 1.2 0 0 0-2.4 0v3.2\" /> <path d=\"M9 21h6\" />",
+"party_popper": "<path d=\"M5.8 11.3 2 22l10.7-3.79\" /> <path d=\"M4 3h.01\" /> <path d=\"M22 8h.01\" /> <path d=\"M15 2h.01\" /> <path d=\"M22 20h.01\" /> <path d=\"m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10\" /> <path d=\"m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11-.11.7-.72 1.22-1.43 1.22H17\" /> <path d=\"m11 2 .33.82c.34.86-.2 1.82-1.11 1.98-.7.11-1.22.72-1.22 1.43V7\" /> <path d=\"M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z\" />",
 "wind": "<path d=\"M12.8 19.6A2 2 0 1 0 14 16H2\" /> <path d=\"M17.5 8a2.5 2.5 0 1 1 2 4H2\" /> <path d=\"M9.8 4.4A2 2 0 1 1 11 8H2\" />",
 "wrench": "<path d=\"M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z\" />"
 };
 Object.assign(ICONS, LUCIDE_ICONS);
-const ICON_LIBRARY = Object.keys(LUCIDE_ICONS);
+/* Picker order — most-likely habit icons first (movement/health → food/sleep →
+   learning/work → home/chores → creative/fun → celebration → travel/misc). */
+const ICON_RANK = [
+  'dumbbell','activity','bike','footprints','heart','prayer','droplet','pill','brain','stethoscope',
+  'bed','moon','alarm_clock','bath','salad','apple','carrot','egg','utensils','coffee',
+  'pen','laptop','code','briefcase','mail','inbox','folder','lightbulb','calendar','clock','phone',
+  'house','wrench','hammer','dog','cat','baby','flower','leaf','sprout','trees','sun',
+  'music','guitar','palette','brush','camera','film','headphones','mic','puzzle',
+  'party_popper','sparkles','star','trophy','medal','gift','cake','cookie','pizza',
+  'wallet','banknote','car','plane','luggage','globe','compass','mountain','tent','waves',
+  'smile','glasses','shirt','scissors','umbrella','key','feather','eye','ear','wind',
+  'armchair','sofa','backpack','landmark','image','fish','flame','rocket','cloud'
+];
+const ICON_LIBRARY = [...ICON_RANK.filter(n=>LUCIDE_ICONS[n]),
+  ...Object.keys(LUCIDE_ICONS).filter(n=>!ICON_RANK.includes(n))];
