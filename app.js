@@ -669,9 +669,9 @@ const OB = {
           <div class="bc-head"><button class="swatch" data-f="look" style="background:${p.fill};border-color:${p.edge};--swk:${iconInkFor(c, p.fill)}" title="Change look">${ic(c.icon)}</button>
             <input type="text" data-f="bname" value="${esc(c.name)}" aria-label="Bucket name" style="font-weight:700;font-size:17px">
           </div>
-          <div class="bc-label">Blocks per week — the goal</div>
+          <div class="be-lab">Weekly goal<span>Blocks per week.</span></div>
           <div class="stepper"><button data-f="g-">−</button><span class="val">${c.goal}</span><button data-f="g+">＋</button></div>
-          <div class="bc-label">Block size — day slots one takes</div>
+          <div class="be-lab">Brick size<span>Scales with how long it takes to complete.</span></div>
           <div class="stepper"><button data-f="s-">−</button><span class="val">${c.slots||1} slot${(c.slots||1)>1?'s':''}</span><button data-f="s+">＋</button></div>
           <div class="bc-label">Notes</div>
           <textarea data-f="notes" placeholder="e.g. 3× = 2 swim + 1 yoga">${esc(c.notes||'')}</textarea>
@@ -806,20 +806,23 @@ function openBucketEditor(c, opts={}){
         <input type="text" id="beName" value="${esc(c.name)}" aria-label="Bucket name"
           style="flex:1;min-width:0;border:none;background:var(--inset);border-radius:12px;padding:12px 14px;font:inherit;font-weight:700;font-size:17px;color:var(--ink)">
       </div>
-      <div class="bc-label">Blocks per week — the goal${isDraft?'':' · applies when you restack'}</div>
+      <div class="be-lab">Weekly goal<span>Blocks per week.${isDraft?'':' Changes land when you restack.'}</span></div>
       <div class="stepper"><button id="beGm">−</button><span class="val" id="beGV">${goal}</span><button id="beGp">＋</button></div>
-      <div class="bc-label">Brick size — day slots one takes</div>
+      <div class="be-lab">Brick size<span>Scales with how long it takes to complete.</span></div>
       <div class="stepper"><button id="beSm">−</button><span class="val" id="beSV">${slots} slot${slots>1?'s':''}</span><button id="beSp">＋</button></div>
-      <div class="bc-label">Icon color on the brick</div>
-      <div class="seg" id="beInk">
-        ${[['auto','Auto'],['ink','Ink'],['paper','Paper']].map(([k,l])=>`<button data-k="${k}" class="${(c.iconInk||'auto')===k?'on':''}">${l}</button>`).join('')}
+      <div class="be-lab">Icon color</div>
+      <div class="seg segsw" id="beInk">
+        <button data-k="auto" class="${(c.iconInk||'auto')==='auto'?'on':''}">Auto</button>
+        <button data-k="ink" class="${c.iconInk==='ink'?'on':''}" aria-label="Ink" title="Ink"><i style="background:#33414D;box-shadow:inset 0 0 0 1px var(--hairline)"></i></button>
+        <button data-k="paper" class="${c.iconInk==='paper'?'on':''}" aria-label="Paper" title="Paper"><i style="background:#FDFBF7;box-shadow:inset 0 0 0 1px var(--hairline)"></i></button>
       </div>
-      ${chipsHost ? `<div class="chips-toggle" style="margin-top:14px">
+      ${chipsHost ? `<div class="be-lab">Chips mode<span>Several small reps add up to one block.</span></div>
+      <div class="chips-toggle" style="margin-top:2px">
         <label class="switch"><input type="checkbox" id="beChips" ${chipsHost.chips?'checked':''}><span class="knob"></span></label>
-        <span>Count in <strong>chips</strong> (several small reps = one block)</span>
+        <span>${chipsHost.chips?'On':'Off'}</span>
       </div>
       <div id="beChipCfg">${chipConfigHTML(chipsHost.chips)}</div>` : ''}
-      <div class="bc-label">Notes</div>
+      <div class="be-lab">Notes</div>
       <textarea id="beNotes" placeholder="e.g. 3× = 2 swim + 1 yoga" style="width:100%;border:none;background:var(--inset);border-radius:12px;padding:11px 13px;font:inherit;font-size:14.5px;color:var(--ink);min-height:64px">${esc((isDraft?c.notes:bk&&bk.notes)||'')}</textarea>
       <div class="sheet-actions" style="margin-top:16px">
         <button class="btn-danger" id="beDelete" style="flex:none;padding:11px 16px">Remove</button>
