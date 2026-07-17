@@ -1,5 +1,5 @@
 /* Kachunk service worker — app-shell cache */
-const CACHE = 'kachunk-v2';
+const CACHE = 'kachunk-v3';
 const SHELL = ['./','index.html','styles.css','app.js','icons.js','matter.min.js','three-bundle.js','manifest.webmanifest','favicon.svg','icon-192.png','icon-512.png','icon-maskable-512.png','apple-touch-icon.png',
   'fonts/bricolage-grotesque-latin-600-normal.woff2','fonts/bricolage-grotesque-latin-700-normal.woff2','fonts/bricolage-grotesque-latin-800-normal.woff2',
   'fonts/inclusive-sans-latin-400-normal.woff2','fonts/inclusive-sans-latin-600-normal.woff2','fonts/inclusive-sans-latin-700-normal.woff2',

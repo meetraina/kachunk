@@ -33,6 +33,8 @@ const ICONS = {
   clock:  '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
   grid:   '<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>',
   gear:   '<circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v3M12 18.2v3M2.8 12h3M18.2 12h3M5.5 5.5l2.1 2.1M16.4 16.4l2.1 2.1M18.5 5.5l-2.1 2.1M7.6 16.4l-2.1 2.1"/>',
+  sliders:'<path d="M4 7.5h9M17.5 7.5H20M4 16.5h3M11.5 16.5H20"/><circle cx="15.25" cy="7.5" r="2.25"/><circle cx="9.25" cy="16.5" r="2.25"/>',
+  moon:   '<path d="M20 14.5A8.5 8.5 0 019.5 4a8.5 8.5 0 1010.5 10.5z"/>',
   back:   '<path d="M14.5 5.5L8 12l6.5 6.5"/>',
   cloud:  '<path d="M7 18.5a4.5 4.5 0 01-.4-9A6 6 0 0118.2 11a3.8 3.8 0 01-.7 7.5H7z"/>',
   download:'<path d="M12 3.5v11M7.5 10l4.5 4.5L16.5 10M4.5 20.5h15"/>',
@@ -73,23 +75,91 @@ const BLOCK_PALETTES = [
   {key:'brand',  name:'Kachunk',        hint:'the brand colors',        hex:['#7C93A5','#DD7C54','#DFC289','#7E9B95','#C98D7E','#85A88E']},
   {key:'pastel', name:'Pretty pastels', hint:'soft & barely there',     hex:PALETTE.map(p=>p.fill)},
   {key:'bright', name:'Toy box',        hint:'louder, board-game pop',  hex:['#4E8AC8','#E2574C','#F2A93B','#3FA06E','#8A64C8','#E56FA1']},
-  {key:'grey',   name:'Greyscale',      hint:'zero color noise',        hex:['#D9D6CF','#BDB9B1','#A19D94','#858179','#6C6862','#524F4A']},
+  {key:'gem',    name:'Gemtones',       hint:'jewel-box rich',          hex:['#35558A','#2F7D5D','#6E4F8E','#9E3B4D','#C98A2E','#2E7D83']},
+  {key:'zen',    name:'Spa day',        hint:'calm as a warm towel',    hex:['#B3C5C7','#A8BBA8','#E3D7C3','#CFC8BC','#D8C0B4','#8FA08A']},
   {key:'mono',   name:'Mono',           hint:'icons do the talking',    hex:['#E7E2D6','#E7E2D6','#E7E2D6','#E7E2D6','#E7E2D6','#E7E2D6']},
 ];
 const blockPalByKey = k => BLOCK_PALETTES.find(p=>p.key===k) || BLOCK_PALETTES[0];
+/* the build-my-own picker — an unbiased hue wheel, 4 shades per hue (dark → lightest) */
+function hslHex(h,s,l){
+  s/=100; l/=100;
+  const k = n => (n + h/30) % 12;
+  const a = s * Math.min(l, 1-l);
+  const f = n => l - a * Math.max(-1, Math.min(k(n)-3, Math.min(9-k(n), 1)));
+  return '#'+[f(0),f(8),f(4)].map(v=>Math.round(v*255).toString(16).padStart(2,'0')).join('');
+}
+const PICKER_HUES = [
+  {name:'Red',     h:5},   {name:'Orange',  h:28},
+  {name:'Amber',   h:45},  {name:'Yellow',  h:60},
+  {name:'Lime',    h:90},  {name:'Green',   h:135},
+  {name:'Teal',    h:168}, {name:'Cyan',    h:190},
+  {name:'Blue',    h:215}, {name:'Indigo',  h:245},
+  {name:'Purple',  h:275}, {name:'Magenta', h:305},
+  {name:'Pink',    h:335}, {name:'Brown',   h:24, brown:true},
+];
+const PICKER_COLORS = PICKER_HUES.flatMap(({h,brown}) => brown
+  ? [hslHex(h,38,26), hslHex(h,36,42), hslHex(h,34,62), hslHex(h,32,82)]
+  : [hslHex(h,52,34), hslHex(h,56,54), hslHex(h,60,72), hslHex(h,64,87)]
+).concat([hslHex(210,8,25), hslHex(210,7,48), hslHex(210,7,70), hslHex(210,8,88)]); // greys
 /* re-base every color to the chosen palette by slot order (custom hexes get replaced) */
-function applyBlockPalette(key, colors){
+function applyBlockPalette(key, colors, customHexes){
+  if(key==='custom'){
+    const hx = (customHexes && customHexes.length) ? customHexes : blockPalByKey('brand').hex;
+    colors.forEach((c,i)=>{ c.customHex = hx[i%hx.length]; });
+    return;
+  }
   const bp = blockPalByKey(key);
   colors.forEach((c,i)=>{
     if(key==='pastel'){ c.customHex = null; c.pal = PALETTE[i%6].key; }
     else c.customHex = bp.hex[i%6];
   });
 }
+function palDot(h){ return `<i style="background:${h};box-shadow:inset 0 -3px 0 ${shade(h,-0.22)}"></i>`; }
 function palCardHTML(bp, on){
   return `<button class="pal-card ${on?'on':''}" data-bp="${bp.key}">
     <span><span class="pc-name">${bp.name}</span><span class="pc-hint">${bp.hint}</span></span>
-    <span class="pal-dots">${bp.hex.map(h=>`<i style="background:${h};box-shadow:inset 0 -3px 0 ${shade(h,-0.22)}"></i>`).join('')}</span>
+    <span class="pal-dots">${bp.hex.map(palDot).join('')}</span>
   </button>`;
+}
+/* the "build my own" card — opens the picker sheet */
+function customCardHTML(sel, on){
+  const dots = Array.from({length:6},(_,i)=> sel[i] ? palDot(sel[i]) : '<i class="empty"></i>').join('');
+  return `<button class="pal-card ${on?'on':''}" data-bp="custom">
+    <span><span class="pc-name">Build my own</span><span class="pc-hint">any six colors, any shade</span></span>
+    <span class="pal-dots">${dots}</span>
+  </button>`;
+}
+/* full-screen picker sheet: 4 shades per hue, 2 hues per row (8 swatches), plus a free hex tile */
+function openCustomPicker(getSel, setSel, onComplete, onClose){
+  const paint = ()=>{
+    const sel = getSel();
+    const slots = Array.from({length:6},(_,i)=> sel[i] ? palDot(sel[i]) : '<i class="empty"></i>').join('');
+    $('#cbpPreview').innerHTML = slots;
+    $('#cbpHint').textContent = `${sel.length}/6 picked` + (sel.length===6 ? ' — applied to your buckets' : '');
+    $$('#cbpGrid .cb-sw').forEach(el=>el.classList.toggle('on', sel.includes(el.dataset.h)));
+  };
+  const tap = h=>{
+    const sel = [...getSel()], i = sel.indexOf(h);
+    if(i>=0) sel.splice(i,1);
+    else { if(sel.length>=6) return toast('Six colors — tap one to swap it out.'); sel.push(h); }
+    if(sel.length===6) onComplete(sel);
+    setSel(sel); paint();
+  };
+  Sheet.open(`
+    <h3 style="margin-bottom:2px">Build your palette</h3>
+    <p class="muted" style="font-size:13.5px;margin:0 0 12px">Tap any six — dark to lightest, every hue. Tap a pick again to drop it.</p>
+    <div class="pal-dots cb-preview" id="cbpPreview"></div>
+    <div class="cb-grid" id="cbpGrid">
+      ${PICKER_COLORS.map(h=>`<button class="cb-sw" data-h="${h}" style="background:${h}" aria-label="${h}"></button>`).join('')}
+      <label class="cb-sw cb-any" title="Any color"><input type="color" id="cbpAny" value="#8A64C8"><span>＋ any</span></label>
+    </div>
+    <div class="cb-hint" id="cbpHint"></div>
+    <button class="btn btn-primary" id="cbpDone" style="width:100%;margin-top:14px">Done</button>
+  `, {onClose});
+  $$('#cbpGrid .cb-sw[data-h]').forEach(el=>el.onclick = ()=>tap(el.dataset.h));
+  $('#cbpAny').onchange = e=>tap(e.target.value.toUpperCase());
+  $('#cbpDone').onclick = ()=>Sheet.close();
+  paint();
 }
 
 const SHAPES = [
@@ -441,16 +511,21 @@ const OB = {
 
     if(key==='palette'){
       this.paint('#F8F6F2', '#33414D');
-      applyBlockPalette(d.palKey||'brand', d.colors);
+      d.customPal = d.customPal||[];
+      if(d.palKey!=='custom' || d.customPal.length===6) applyBlockPalette(d.palKey||'brand', d.colors, d.customPal);
       b.innerHTML = `
         <h2 class="ob-title">Choose your block colors</h2>
         <p class="ob-sub">Six colors that go together. Your buckets wear them in order — you can re-pick any time in Settings.</p>
         ${BLOCK_PALETTES.map(bp=>palCardHTML(bp, (d.palKey||'brand')===bp.key)).join('')}
+        ${customCardHTML(d.customPal, (d.palKey||'brand')==='custom')}
         <div class="set-note" style="padding:6px 4px">Mono makes every block the same — the icons carry the meaning.</div>`;
       $$('#obBody .pal-card').forEach(el=>el.onclick=()=>{
         d.palKey = el.dataset.bp;
-        applyBlockPalette(d.palKey, d.colors);
+        if(d.palKey!=='custom'){ applyBlockPalette(d.palKey, d.colors); this.render(); return; }
         this.render();
+        openCustomPicker(()=>d.customPal, sel=>{ d.customPal = sel; },
+          sel=>applyBlockPalette('custom', d.colors, sel),
+          ()=>this.render());
       });
     }
 
@@ -562,6 +637,7 @@ const OB = {
     S.buckets = d.colors.map(c=>({id:uid(), colorId:c.id, name:(c.bucketName||c.name).trim(), notes:c.notes||'', chips:c.chips||null}));
     S.settings.roundupTime = d.roundupTime; S.settings.voice = d.voice;
     S.settings.blockPal = d.palKey||'brand';
+    if(d.customPal && d.customPal.length) S.settings.customPal = d.customPal;
     S.day.maxSlots = d.maxSlots;
     S.onboarded = true;
     if('Notification' in window && Notification.permission==='default' && !S.settings.notifAsked){
@@ -622,9 +698,9 @@ function drawShapePreview(cv, shape, pal){
 
 /* core 3D glossy block painter — toy brick with sheen that sweeps as it spins.
    Light is fixed in WORLD space (top-left), so rotation animates the highlight. */
-function inkFor(fill){ // text color on a block face
+function inkFor(fill){ // icon/text color on a block face — leans paper on mid-tones (founder call)
   const n = parseInt(fill.slice(1),16), r=n>>16, g=(n>>8)&255, b=n&255;
-  return (0.299*r+0.587*g+0.114*b) > 150 ? '#33414D' : '#FDFBF7';
+  return (0.299*r+0.587*g+0.114*b) > 165 ? '#33414D' : '#FDFBF7';
 }
 function drawBlockShape(x, cx, cy, size, shape, pal, angle, iconImg=null, label=null){
   x.save(); x.translate(cx, cy); x.rotate(angle);
@@ -898,9 +974,45 @@ const Floor = {
       lastAcc = {x:a.x, y:a.y, z:a.z};
     });
 
+    // pool-ball divider: a block slammed up into the shelf from below stays below,
+    // but its energy carries through and knocks the cubes sitting above it into the air
+    Matter.Events.on(this.engine, 'collisionStart', e=>{
+      for(const pair of e.pairs){
+        const a = pair.bodyA, b = pair.bodyB;
+        const shelf = a.isShelf ? a : (b.isShelf ? b : null);
+        if(!shelf) continue;
+        const blk = shelf===a ? b : a;
+        if(blk.isStatic || blk.position.y < shelf.position.y) continue; // only hits from underneath
+        const up = -blk.velocity.y;
+        if(up < 6) continue; // needs a real slam, not a resting nudge
+        const power = Math.min(up, 24);
+        let thumped = false;
+        for(const other of this.bodies.values()){
+          if(other === blk || other.position.y > shelf.position.y) continue;      // stays their side
+          if(other.position.y < shelf.position.y - 170) continue;                 // only the shelf layer
+          const dx = Math.abs(other.position.x - blk.position.x);
+          if(dx > 110) continue;                                                  // local, like a cue hit
+          const falloff = 1 - dx/130;
+          Matter.Body.setVelocity(other, {x: other.velocity.x + (Math.random()*2-1)*1.5, y: -power*0.8*falloff});
+          Matter.Body.setAngularVelocity(other, (Math.random()*2-1)*0.28);
+          thumped = true;
+        }
+        if(thumped){ sfx('impact'); buzz(12); }
+      }
+    });
+
     const loop = ()=>{
       if(!this.paused){
         Matter.Engine.update(this.engine, 1000/60);
+        // safety net: if a block ever tunnels across the divider, its plan state follows reality
+        if(!this.sweepMode && !this.dragging){
+          for(const body of this.bodies.values()){
+            if(body.position.y < this.planY()-30 && DayB.isPlanned(body.blockId)){
+              const blk = S.week.blocks.find(x=>x.id===body.blockId);
+              if(blk){ DayB.setPlanned(blk, false); this.updateHeader(); }
+            }
+          }
+        }
         this.draw();
       }
       requestAnimationFrame(loop);
@@ -943,8 +1055,10 @@ const Floor = {
       Matter.Bodies.rectangle(this.W+t/2, this.H/2, t, this.H*3, {isStatic:true}),
       Matter.Bodies.rectangle(this.W/2, -this.H-t/2, this.W*2, t, {isStatic:true}),
     ];
-    // the divider — a thin physical line: the pile rests on it, today's blocks treat it as the ceiling
-    const shelf = Matter.Bodies.rectangle(this.W/2, this.planY()+5, this.W*2, 10, {isStatic:true});
+    // the divider — solid both ways, but kinetic: slam a block into it from below
+    // and the impact thumps through to the pile above (pool-ball rules)
+    const shelf = Matter.Bodies.rectangle(this.W/2, this.planY()+5, this.W*2, 10, {isStatic:true, restitution:0.9});
+    shelf.isShelf = true;
     this.walls.push(shelf);
     Matter.World.add(this.engine.world, this.walls);
   },
@@ -1383,7 +1497,8 @@ const Settings = {
       </div>
       <div class="set-group"><h3>Block colors</h3>
         ${BLOCK_PALETTES.map(bp=>palCardHTML(bp, (S.settings.blockPal||'brand')===bp.key)).join('')}
-        <div class="set-note">Switching re-bases every bucket to the new palette, in order. Custom hexes get replaced.</div>
+        ${customCardHTML(S.settings.customPal||[], (S.settings.blockPal||'brand')==='custom')}
+        <div class="set-note">Switching re-bases every bucket to the new palette, in order. Per-bucket custom hexes get replaced.</div>
       </div>
       <div class="set-group"><h3>Buckets & goals</h3>
         <div id="setColors">${S.colors.map(c=>this.colorRow(c)).join('')}</div>
@@ -1427,8 +1542,16 @@ const Settings = {
     $('#setTheme').onchange = e=>{ S.settings.theme = e.target.checked?'dark':'light'; save(); applyTheme(); };
     $$('#settingsBody .pal-card').forEach(el=>el.onclick=()=>{
       S.settings.blockPal = el.dataset.bp;
-      applyBlockPalette(el.dataset.bp, S.colors);
-      save(); this.render(); Floor.syncBuckets(); Floor.rebuild();
+      if(el.dataset.bp!=='custom'){
+        applyBlockPalette(el.dataset.bp, S.colors);
+        save(); this.render(); Floor.syncBuckets(); Floor.rebuild(); return;
+      }
+      if((S.settings.customPal||[]).length===6) applyBlockPalette('custom', S.colors, S.settings.customPal);
+      save(); this.render();
+      openCustomPicker(()=>S.settings.customPal||[],
+        sel=>{ S.settings.customPal = sel; save(); },
+        sel=>{ applyBlockPalette('custom', S.colors, sel); save(); },
+        ()=>{ this.render(); Floor.syncBuckets(); Floor.rebuild(); });
     });
     $('#setSlotsM').onclick = ()=>{ S.day.maxSlots = Math.max(1,S.day.maxSlots-1); save(); $('#setSlotsV').textContent = S.day.maxSlots; };
     $('#setSlotsP').onclick = ()=>{ S.day.maxSlots = Math.min(24,S.day.maxSlots+1); save(); $('#setSlotsV').textContent = S.day.maxSlots; };
@@ -1449,8 +1572,9 @@ const Settings = {
     $('#addColor').onclick = ()=>{
       if(S.colors.length>=6) return toast('Six buckets max — keep it holdable.');
       const bpKey = S.settings.blockPal||'brand';
+      const hexes = bpKey==='custom' ? ((S.settings.customPal&&S.settings.customPal.length===6)?S.settings.customPal:blockPalByKey('brand').hex) : blockPalByKey(bpKey).hex;
       const c = {id:uid(), name:'New thing', icon:'star', pal:PALETTE[S.colors.length%6].key,
-        customHex: bpKey==='pastel' ? null : blockPalByKey(bpKey).hex[S.colors.length%6], shape:'cube', goal:3, slotSize:1};
+        customHex: bpKey==='pastel' ? null : hexes[S.colors.length%6], shape:'cube', goal:3, slotSize:1};
       S.colors.push(c);
       S.buckets.push({id:uid(), colorId:c.id, name:c.name, notes:'', chips:null});
       for(let i=0;i<c.goal;i++) S.week.blocks.push({id:uid(), colorId:c.id, status:'tray', via:null, ts:null});
@@ -1584,9 +1708,12 @@ const Notif = {
 
 /* ═════════ BOOT ═════════ */
 function applyTheme(){
-  document.documentElement.dataset.theme = S.settings.theme==='dark' ? 'dark' : 'light';
+  const dark = S.settings.theme==='dark';
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   const m = document.querySelector('meta[name=theme-color]');
-  if(m) m.content = S.settings.theme==='dark' ? '#1E262D' : '#F8F6F2';
+  if(m) m.content = dark ? '#1E262D' : '#F8F6F2';
+  const t = $('#btnTheme');
+  if(t){ t.innerHTML = ic(dark ? 'sun' : 'moon'); t.title = dark ? 'Light mode' : 'Dark mode'; }
 }
 function boot(){
   load();
@@ -1613,7 +1740,9 @@ function boot(){
   $('#btnRoundup').onclick = ()=>Roundup.start();
   // replace header text icons with line icons
   $('#btnReceipts').innerHTML = ic('grid');
-  $('#btnSettings').innerHTML = ic('gear');
+  $('#btnSettings').innerHTML = ic('sliders');
+  $('#btnTheme').onclick = ()=>{ S.settings.theme = S.settings.theme==='dark'?'light':'dark'; save(); applyTheme(); };
+  applyTheme(); // sets the moon/sun icon
   $('#receiptsBack').innerHTML = ic('back');
   $('#settingsBack').innerHTML = ic('back');
   $('#obBack').innerHTML = ic('back');
