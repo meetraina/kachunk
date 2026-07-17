@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Kachunk — the week you can hold</title>
+<meta name="description" content="Kachunk replaces the calendar you can't keep with buckets you can't miss. Drag toy-like blocks into weekly buckets. One notification. Zero streak shame.">
+<meta name="theme-color" content="#F8F6F2">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Kachunk">
+<meta property="og:title" content="Kachunk — the week you can hold">
+<meta property="og:description" content="Buckets, not calendars. Blocks you can toss. Nothing you can break.">
+<meta property="og:image" content="icon-512.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ══════════ SPLASH ══════════ -->
+<section id="screen-splash" class="screen active">
+  <div class="splash-inner">
+    <div class="mark-block" aria-hidden="true"><b>k</b><span>.</span></div>
+    <h1 class="logo">Kachunk<span class="logo-dot">.</span></h1>
+    <p class="tagline" id="splashTagline">The week you can hold.<br>Blocks you can move.<br>Nothing you can break.</p>
+    <button class="btn btn-primary btn-big" id="btnStart">Start building</button>
+    <p class="fineprint">No account needed.<br>Your blocks live on your device.</p>
+  </div>
+</section>
+
+<!-- ══════════ ONBOARDING ══════════ -->
+<section id="screen-onboard" class="screen">
+  <header class="ob-head">
+    <button class="btn-icon" id="obBack" aria-label="Back">←</button>
+    <div class="ob-steps" id="obSteps"><i class="on"></i><i></i><i></i><i></i></div>
+    <span class="ob-skip"></span>
+  </header>
+  <div class="ob-body" id="obBody"><!-- rendered by JS --></div>
+  <footer class="ob-foot">
+    <button class="btn btn-primary btn-big" id="obNext">Next</button>
+  </footer>
+</section>
+
+<!-- ══════════ THE FLOOR (main board) ══════════ -->
+<section id="screen-floor" class="screen">
+  <header class="floor-head">
+    <span class="logo logo-sm">Kachunk<span class="logo-dot">.</span></span>
+    <span class="week-label mono" id="weekLabel"></span>
+    <div class="head-actions">
+      <button class="btn-icon" id="btnDay" aria-label="Day Builder" title="Day Builder">▤</button>
+      <button class="btn-icon" id="btnReceipts" aria-label="Receipts" title="Receipts">▦</button>
+      <button class="btn-icon" id="btnSettings" aria-label="Settings" title="Settings">⚙</button>
+    </div>
+  </header>
+  <div class="floor-hint" id="floorHint">Drag a block onto its bucket when it's done. Tap one to toss it — go on.</div>
+  <div class="floor-stage" id="floorStage">
+    <canvas id="worldCanvas"></canvas>
+    <canvas id="glCanvas"></canvas>
+    <canvas id="fxCanvas"></canvas>
+    <div class="bucket-row" id="bucketRow"><!-- bucket hit-targets rendered by JS --></div>
+  </div>
+  <div class="sweep-pop" id="sweepPop" hidden>
+    <div class="sp-txt"><strong>Week sweep.</strong> <span id="spMsg">Tap every block that actually happened — it drops home.</span></div>
+    <div class="sp-actions">
+      <button class="btn sp-restack" id="spRestack">Restack my week</button>
+      <button class="sp-x" id="spClose" aria-label="Close sweep">✕</button>
+    </div>
+  </div>
+  <button class="roundup-fab" id="btnRoundup" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17l5-5m0 0l7-7a2.1 2.1 0 013 3l-7 7m-3-3l3 3m-6 0l-2.5 2.5M9 20l-1.5 1M13 21l.5-2"/></svg> <span id="fabLabel">Week sweep</span><span class="fab-x" id="fabDismiss" role="button" aria-label="Dismiss">✕</span></button>
+</section>
+
+<!-- ══════════ RECEIPTS ══════════ -->
+<section id="screen-receipts" class="screen">
+  <header class="page-head">
+    <button class="btn-icon" id="receiptsBack" aria-label="Back">←</button>
+    <h2>Receipts</h2>
+    <span class="mono muted" id="receiptsWeekLabel"></span>
+  </header>
+  <div class="page-body" id="receiptsBody"><!-- rendered --></div>
+</section>
+
+<!-- ══════════ SETTINGS ══════════ -->
+<section id="screen-settings" class="screen">
+  <header class="page-head">
+    <button class="btn-icon" id="settingsBack" aria-label="Back">←</button>
+    <h2>Settings</h2>
+    <span></span>
+  </header>
+  <div class="page-body" id="settingsBody"><!-- rendered --></div>
+</section>
+
+<!-- ══════════ OVERLAYS ══════════ -->
+<div class="sheet-scrim" id="scrim" hidden></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" hidden></div>
+<div class="toast-wrap" id="toastWrap" aria-live="polite"></div>
+
+<script src="matter.min.js"></script>
+<script src="three-bundle.js"></script>
+<script src="app.js"></script>
+<script src="icons.js"></script>
+</body>
+</html>
