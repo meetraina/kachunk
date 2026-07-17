@@ -1326,17 +1326,10 @@ const Floor = {
     x.fillStyle = css.getPropertyValue('--muted').trim()||'#8B949B';
     x.font = '600 10.5px Figtree, sans-serif'; x.textAlign='right';
     {
-      // today: progress bar that fills as planned blocks get banked
+      // today: simple text — banked/scheduled, plus tomorrow's pre-plan when it exists
       const sched = DayB.used('today'), done = DayB.doneUnits(), tmrw = DayB.used('tomorrow');
       const label = `TODAY ${done}/${sched||S.day.maxSlots}` + (tmrw ? `  ·  TMRW ${tmrw}/${S.day.maxSlots}` : '');
       x.fillText(label, this.W-16, this.planY()+18);
-      const bw = 104, bx = this.W-16-bw, by = this.planY()+26;
-      x.strokeStyle = hair; x.lineWidth = 1; x.setLineDash([]);
-      x.beginPath(); x.roundRect(bx, by, bw, 7, 4); x.stroke();
-      if(sched && done){
-        x.fillStyle = css.getPropertyValue('--good').trim()||'#6F8F74';
-        x.beginPath(); x.roundRect(bx, by, Math.max(7, bw*Math.min(done/sched,1)), 7, 4); x.fill();
-      }
     }
     x.strokeStyle = hair; x.lineWidth = 1.5; x.setLineDash([2,6]); x.lineCap='round';
       x.beginPath(); x.moveTo(14,this.planY()); x.lineTo(this.W-14,this.planY()); x.stroke(); x.setLineDash([]);
