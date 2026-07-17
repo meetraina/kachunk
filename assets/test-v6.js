@@ -12,6 +12,8 @@ const { chromium } = require('playwright');
   for (const n of ['Move','Social','Water']) { await page.click(`.chip[data-starter="${n}"]`); await page.waitForTimeout(100); }
   await page.screenshot({ path: 'shots/o2-pick.png' });
   await page.click('#obNext'); await page.waitForTimeout(350);
+  await page.screenshot({ path: 'shots/o2b-palette.png' });
+  await page.click('#obNext'); await page.waitForTimeout(350);
   await page.screenshot({ path: 'shots/o3-bucket-move.png' });
   await page.click('#obNext'); await page.waitForTimeout(300);
   await page.screenshot({ path: 'shots/o4-bucket-social.png' });
