@@ -72,12 +72,12 @@ function palFor(c){
 
 /* ── block color palettes — pick one, blocks re-base by slot order ── */
 const BLOCK_PALETTES = [
-  {key:'brand',  name:'Kachunk',        hint:'the brand colors',        hex:['#7C93A5','#DD7C54','#DFC289','#7E9B95','#C98D7E','#85A88E']},
-  {key:'pastel', name:'Pretty pastels', hint:'soft & barely there',     hex:PALETTE.map(p=>p.fill)},
-  {key:'bright', name:'Toy box',        hint:'louder, board-game pop',  hex:['#4E8AC8','#E2574C','#F2A93B','#3FA06E','#8A64C8','#E56FA1']},
-  {key:'gem',    name:'Gemtones',       hint:'jewel-box rich',          hex:['#35558A','#2F7D5D','#6E4F8E','#9E3B4D','#C98A2E','#2E7D83']},
-  {key:'zen',    name:'Spa day',        hint:'calm as a warm towel',    hex:['#B3C5C7','#A8BBA8','#E3D7C3','#CFC8BC','#D8C0B4','#8FA08A']},
-  {key:'mono',   name:'Mono',           hint:'icons do the talking',    hex:['#E7E2D6','#E7E2D6','#E7E2D6','#E7E2D6','#E7E2D6','#E7E2D6']},
+  {key:'brand',  name:'Kachunk.',       hint:'default brights',                    hex:['#7C93A5','#DD7C54','#DFC289','#7E9B95','#C98D7E','#85A88E']},
+  {key:'pastel', name:'Almost Neutral', hint:'soft and barely there',              hex:PALETTE.map(p=>p.fill)},
+  {key:'zen',    name:'Spa Day',        hint:'low-stim and relaxing',              hex:['#B3C5C7','#A8BBA8','#E3D7C3','#CFC8BC','#D8C0B4','#8FA08A']},
+  {key:'bright', name:'Toy Box',        hint:'classic bright pop',                 hex:['#4E8AC8','#E2574C','#F2A93B','#3FA06E','#8A64C8','#E56FA1']},
+  {key:'gem',    name:'Moody',          hint:'rich, deep gemtones',                hex:['#35558A','#2F7D5D','#6E4F8E','#9E3B4D','#C98A2E','#2E7D83']},
+  {key:'mono',   name:'Mono',           hint:'let the icons speak for themselves', hex:['#E7E2D6','#E7E2D6','#E7E2D6','#E7E2D6','#E7E2D6','#E7E2D6']},
 ];
 const blockPalByKey = k => BLOCK_PALETTES.find(p=>p.key===k) || BLOCK_PALETTES[0];
 /* the build-my-own picker — founder-supplied flat-UI swatches arranged as a spectrum,
@@ -184,10 +184,16 @@ function customCardHTML(sel, on){
 function openCustomPicker(getSel, setSel, onComplete, onClose, onSaved){
   const paint = ()=>{
     const sel = getSel();
-    const slots = Array.from({length:6},(_,i)=> sel[i] ? palDot(sel[i]) : '<i class="empty"></i>').join('');
+    const slots = Array.from({length:6},(_,i)=> sel[i]
+      ? `<i data-ord="${sel[i]}" style="background:${sel[i]};box-shadow:inset 0 -3px 0 ${shade(sel[i],-0.22)}"><b class="drag-h" style="color:${inkFor(sel[i])==='#33414D'?'rgba(51,65,77,.55)':'rgba(253,251,247,.7)'}">⠿</b></i>`
+      : '<i class="empty"></i>').join('');
     $('#cbpPreview').innerHTML = slots;
     $('#cbpHint').textContent = `${sel.length}/6 picked` + (sel.length===6 ? ' — applied to your buckets' : '');
     $$('#cbpGrid .cb-sw').forEach(el=>el.classList.toggle('on', sel.includes(el.dataset.h)));
+    enableReorderX($('#cbpPreview'), order=>{
+      const cur = getSel();
+      if(order.length===cur.length){ if(cur.length===6) onComplete(order); setSel(order); paint(); }
+    });
   };
   const tap = h=>{
     const sel = [...getSel()], i = sel.indexOf(h);
@@ -203,8 +209,12 @@ function openCustomPicker(getSel, setSel, onComplete, onClose, onSaved){
     <div class="cb-grid" id="cbpGrid">
       ${PICKER_COLORS.map(h=>`<button class="cb-sw" data-h="${h}" style="background:${h}" aria-label="${h}"></button>`).join('')}
       <label class="cb-sw cb-any" title="Any color"><input type="color" id="cbpAny" value="#8A64C8"><span>＋ any</span></label>
+      <button class="cb-sw cb-any cb-dice" id="cbpSurprise" type="button">🎲 surprise me</button>
     </div>
-    <div class="cb-hint" id="cbpHint"></div>
+    <div style="display:flex;align-items:center;gap:12px;justify-content:center">
+      <div class="cb-hint" id="cbpHint" style="margin-top:10px"></div>
+      <button id="cbpClear" type="button" style="appearance:none;border:none;background:transparent;color:var(--mark);font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;padding:10px 2px 0">clear it</button>
+    </div>
     <div style="display:flex;gap:8px;margin-top:12px">
       <input type="text" id="cbpName" placeholder="Name it to save it…" maxlength="22"
         style="flex:1;border:none;background:var(--inset);border-radius:12px;padding:11px 14px;font:inherit;font-size:14.5px;color:var(--ink)">
@@ -214,6 +224,12 @@ function openCustomPicker(getSel, setSel, onComplete, onClose, onSaved){
   `, {onClose});
   $$('#cbpGrid .cb-sw[data-h]').forEach(el=>el.onclick = ()=>tap(el.dataset.h));
   $('#cbpAny').onchange = e=>tap(e.target.value.toUpperCase());
+  $('#cbpSurprise').onclick = ()=>{
+    const chromatic = PICKER_COLORS.slice(0, 42);
+    const pick = [...chromatic].sort(()=>Math.random()-0.5).slice(0,6);
+    onComplete(pick); setSel(pick); paint(); sfx('drop');
+  };
+  $('#cbpClear').onclick = ()=>{ setSel([]); paint(); sfx('tick'); };
   $('#cbpSave').onclick = ()=>{
     const sel = getSel();
     if(sel.length!==6) return toast('Pick all six first — then save.');
@@ -791,9 +807,9 @@ function openBucketEditor(c, opts={}){
           style="flex:1;min-width:0;border:none;background:var(--inset);border-radius:12px;padding:12px 14px;font:inherit;font-weight:700;font-size:17px;color:var(--ink)">
       </div>
       <div class="bc-label">Blocks per week — the goal${isDraft?'':' · applies when you restack'}</div>
-      <div class="stepper"><button id="beG-">−</button><span class="val" id="beGV">${goal}</span><button id="beG+">＋</button></div>
+      <div class="stepper"><button id="beGm">−</button><span class="val" id="beGV">${goal}</span><button id="beGp">＋</button></div>
       <div class="bc-label">Brick size — day slots one takes</div>
-      <div class="stepper"><button id="beS-">−</button><span class="val" id="beSV">${slots} slot${slots>1?'s':''}</span><button id="beS+">＋</button></div>
+      <div class="stepper"><button id="beSm">−</button><span class="val" id="beSV">${slots} slot${slots>1?'s':''}</span><button id="beSp">＋</button></div>
       <div class="bc-label">Icon color on the brick</div>
       <div class="seg" id="beInk">
         ${[['auto','Auto'],['ink','Ink'],['paper','Paper']].map(([k,l])=>`<button data-k="${k}" class="${(c.iconInk||'auto')===k?'on':''}">${l}</button>`).join('')}
@@ -815,10 +831,10 @@ function openBucketEditor(c, opts={}){
       c.name = nm; if(isDraft) c.bucketName = nm; if(bk) bk.name = nm;
       commit();
     };
-    $('#beG-').onclick = ()=>{ if(isDraft){ c.goal = clamp(c.goal-1,1,14); } else { S.nextGoals[c.id] = clamp((S.nextGoals[c.id]??c.goal)-1,1,14); } commit(); $('#beGV').textContent = isDraft?c.goal:S.nextGoals[c.id]; };
-    $('#beG+').onclick = ()=>{ if(isDraft){ c.goal = clamp(c.goal+1,1,14); } else { S.nextGoals[c.id] = clamp((S.nextGoals[c.id]??c.goal)+1,1,14); } commit(); $('#beGV').textContent = isDraft?c.goal:S.nextGoals[c.id]; };
-    $('#beS-').onclick = ()=>{ c[slotKey] = Math.max(1,(c[slotKey]||1)-1); commit(); const s=c[slotKey]; $('#beSV').textContent = `${s} slot${s>1?'s':''}`; };
-    $('#beS+').onclick = ()=>{ c[slotKey] = Math.min(8,(c[slotKey]||1)+1); commit(); const s=c[slotKey]; $('#beSV').textContent = `${s} slot${s>1?'s':''}`; };
+    $('#beGm').onclick = ()=>{ if(isDraft){ c.goal = clamp(c.goal-1,1,14); } else { S.nextGoals[c.id] = clamp((S.nextGoals[c.id]??c.goal)-1,1,14); } commit(); $('#beGV').textContent = isDraft?c.goal:S.nextGoals[c.id]; };
+    $('#beGp').onclick = ()=>{ if(isDraft){ c.goal = clamp(c.goal+1,1,14); } else { S.nextGoals[c.id] = clamp((S.nextGoals[c.id]??c.goal)+1,1,14); } commit(); $('#beGV').textContent = isDraft?c.goal:S.nextGoals[c.id]; };
+    $('#beSm').onclick = ()=>{ c[slotKey] = Math.max(1,(c[slotKey]||1)-1); commit(); const s=c[slotKey]; $('#beSV').textContent = `${s} slot${s>1?'s':''}`; };
+    $('#beSp').onclick = ()=>{ c[slotKey] = Math.min(8,(c[slotKey]||1)+1); commit(); const s=c[slotKey]; $('#beSV').textContent = `${s} slot${s>1?'s':''}`; };
     $$('#beInk button').forEach(el=>el.onclick = ()=>{
       c.iconInk = el.dataset.k==='auto' ? null : el.dataset.k;
       if(c.iconInk===null) delete c.iconInk;
@@ -842,6 +858,40 @@ function openBucketEditor(c, opts={}){
     $('#beDone').onclick = ()=>Sheet.close();
   };
   render();
+}
+
+/* horizontal drag-to-reorder (palette preview dots) */
+function enableReorderX(list, onCommit){
+  if(!list) return;
+  list.querySelectorAll('.drag-h').forEach(h=>{
+    h.style.touchAction = 'none';
+    let item = null, startX = 0;
+    h.addEventListener('pointerdown', e=>{
+      item = h.closest('[data-ord]'); if(!item) return;
+      e.preventDefault(); e.stopPropagation();
+      try{ h.setPointerCapture(e.pointerId); }catch(_){}
+      startX = e.clientX; item.classList.add('dragging');
+    });
+    h.addEventListener('pointermove', e=>{
+      if(!item) return;
+      item.style.transform = `translateX(${e.clientX-startX}px)`;
+      const sibs = [...list.querySelectorAll('[data-ord]')].filter(x=>x!==item);
+      for(const s of sibs){
+        const r = s.getBoundingClientRect(), mid = r.left + r.width/2;
+        const before = !!(item.compareDocumentPosition(s) & Node.DOCUMENT_POSITION_PRECEDING);
+        if(before && e.clientX < mid){ list.insertBefore(item, s); startX = e.clientX; item.style.transform=''; break; }
+        if(!before && e.clientX > mid){ list.insertBefore(item, s.nextSibling); startX = e.clientX; item.style.transform=''; break; }
+      }
+    });
+    const end = ()=>{
+      if(!item) return;
+      item.classList.remove('dragging'); item.style.transform = '';
+      onCommit([...list.querySelectorAll('[data-ord]')].map(x=>x.dataset.ord));
+      item = null;
+    };
+    h.addEventListener('pointerup', end);
+    h.addEventListener('pointercancel', end);
+  });
 }
 
 /* pointer-based drag-to-reorder for card lists (works on touch) */
@@ -913,7 +963,15 @@ function openColorPicker(c, onDone){
     <input type="search" id="iconSearch" placeholder="search icons…" style="width:100%;border:2px solid var(--hairline);border-radius:10px;padding:9px 12px;font:inherit;background:var(--inset);color:var(--ink);margin-bottom:10px">
     <div id="iconGrid" style="display:flex;flex-wrap:wrap;gap:8px;max-height:240px;overflow-y:auto">${iconGrid('')}</div>`);
   const bindIcons = ()=>{
-    $$('#iconGrid .iconpick').forEach(el=>el.onclick = ()=>{ c.icon = el.dataset.i; onDone(); Sheet.close(); });
+    $$('#iconGrid .iconpick').forEach(el=>el.onclick = ()=>{
+      c.icon = el.dataset.i;
+      if(/^(New thing|My thing)$/.test((c.name||'').trim()) || !(c.name||'').trim()){
+        c.name = iconNiceName(el.dataset.i);
+        const bk = S.buckets.find(b=>b.colorId===c.id); if(bk) bk.name = c.name;
+        if(c.bucketName!==undefined) c.bucketName = c.name;
+      }
+      onDone(); Sheet.close();
+    });
   };
   bindIcons();
   $('#iconSearch').oninput = e=>{ $('#iconGrid').innerHTML = iconGrid(e.target.value.trim().toLowerCase().replace(/[ -]/g,'_')); bindIcons(); };
@@ -943,6 +1001,24 @@ function inkFor(fill){ // icon/text color on a block face — leans paper on mid
   const n = parseInt(fill.slice(1),16), r=n>>16, g=(n>>8)&255, b=n&255;
   return (0.299*r+0.587*g+0.114*b) > 165 ? '#33414D' : '#FDFBF7';
 }
+/* icon → a starter bucket name that goes with it */
+const ICON_NAMES = {dumbbell:'Move', bike:'Ride', footprints:'Walk', activity:'Cardio', heart:'Care', prayer:'Pray',
+  droplet:'Water', pill:'Meds', brain:'Deep work', stethoscope:'Health', bed:'Sleep', moon:'Rest', alarm_clock:'Up early',
+  bath:'Unwind', salad:'Eat well', apple:'Snack smart', carrot:'Veggies', egg:'Protein', utensils:'Meal prep', coffee:'Slow coffee',
+  pen:'Write', laptop:'Focus', code:'Code', briefcase:'Work', mail:'Inbox zero', inbox:'Admin', folder:'Organize',
+  lightbulb:'Ideas', calendar:'Plan', clock:'On time', phone:'Call someone', house:'Home', wrench:'Fix it', hammer:'Projects',
+  dog:'Dog walk', cat:'Cat time', baby:'Kid time', flower:'Garden', leaf:'Outside', sprout:'Grow', trees:'Nature', sun:'Sunlight',
+  music:'Practice', guitar:'Guitar', palette:'Create', brush:'Paint', camera:'Photos', film:'Film', headphones:'Listen',
+  mic:'Record', puzzle:'Puzzle', party_popper:'Celebrate', sparkles:'Tidy', trophy:'Win', medal:'Train',
+  gift:'Give', cake:'Bake', cookie:'Treat', pizza:'Cook', wallet:'Budget', banknote:'Save', car:'Errands', plane:'Travel prep',
+  globe:'Language', compass:'Explore', mountain:'Hike', tent:'Adventure', waves:'Swim', smile:'Check in', glasses:'Study',
+  shirt:'Laundry', scissors:'Groom', umbrella:'Prepared', key:'Lock up', feather:'Journal', eye:'Screen break', ear:'Listen up',
+  wind:'Breathe', armchair:'Sit less', sofa:'Reset the room', backpack:'Pack', landmark:'Errand run', image:'Scrapbook',
+  fish:'Aquarium', rocket:'Ship it', read:'Read', book:'Read'};
+function iconNiceName(key){
+  return ICON_NAMES[key] || (key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g,' '));
+}
+
 /* per-bucket icon ink override: auto (by luminance) | ink | paper */
 function iconInkFor(c, fill){
   if(c && c.iconInk==='ink') return '#33414D';
@@ -1580,27 +1656,29 @@ const Floor = {
     if(!block || block.status==='dropped'){ this.fadeChips(parentId); return; }
     const chips = this.chipsOf(parentId);
     const target = {x: clamp(at.x, 40, this.W-40), y: Math.min(at.y, this.planY()-70)};
-    chips.forEach(ch=>{
-      ch.collisionFilter.mask = 0; // ghost through the shelf on the way home
-      const d = {x:target.x-ch.position.x, y:target.y-ch.position.y};
-      const dist = Math.hypot(d.x,d.y)||1;
-      const v = Math.min(dist*0.11, 30);
-      Matter.Body.setVelocity(ch, {x:d.x/dist*v, y:d.y/dist*v});
-      Matter.Body.setAngularVelocity(ch, (Math.random()-.5)*0.5);
+    const c = S.colors.find(k=>k.id===block.colorId);
+    const p = palFor(c||{});
+    let arrived = 0;
+    chips.forEach((ch,i)=>{
+      const from = {x:ch.position.x, y:ch.position.y};
+      Matter.World.remove(this.engine.world, ch); this.bodies.delete(ch.blockId);
+      this.flights.push({from, to:{...target}, t0:performance.now()+i*45, dur:340,
+        pal:p, shape:'cube', icon:c?c.icon:'star', ink:iconInkFor(c, p.fill), size:(ch.chipSize||18),
+        done:()=>{
+          arrived++;
+          if(arrived < chips.length) return;
+          const nb = this.bodyFor(block);
+          if(nb){
+            Matter.Body.setPosition(nb, target); Matter.Body.setVelocity(nb, {x:0, y:-2.5});
+            this.bodies.set(block.id, nb); Matter.World.add(this.engine.world, nb);
+            Renderer3D.tumble(block.id, 1.1);
+          }
+          DayB.setPlanned(block, false);
+          sfx('drop'); buzz(12);
+          this.updateHeader();
+        }});
     });
     sfx('slide');
-    setTimeout(()=>{
-      this.chipsOf(parentId).forEach(ch=>{ Matter.World.remove(this.engine.world, ch); this.bodies.delete(ch.blockId); });
-      const nb = this.bodyFor(block);
-      if(nb){
-        Matter.Body.setPosition(nb, target); Matter.Body.setVelocity(nb, {x:0, y:-2.5});
-        this.bodies.set(block.id, nb); Matter.World.add(this.engine.world, nb);
-        Renderer3D.tumble(block.id, 1.3);
-      }
-      DayB.setPlanned(block, false);
-      sfx('drop'); buzz(12);
-      this.updateHeader();
-    }, 400);
   },
   rejoinAllChips(){
     const parents = [...new Set([...this.bodies.values()].filter(b=>b.isChip).map(b=>b.chipParent))];
@@ -1880,13 +1958,6 @@ const Settings = {
   },
   render(){
     $('#settingsBody').innerHTML = `
-      <div class="set-group"><h3>Voice</h3>
-        ${Object.entries(VOICES).map(([k,v])=>`
-          <button class="voice-card ${S.settings.voice===k?'on':''}" data-v="${k}">
-            <span class="vc-name">${v.label} <span class="heat">${v.heat}</span></span>
-            <span class="vc-line">“${v.sample}”</span>
-          </button>`).join('')}
-      </div>
       <div class="set-group"><h3>The Roundup</h3>
         <div class="set-card">
           <div class="set-row"><span class="grow">Daily nudge at</span>
@@ -1915,6 +1986,13 @@ const Settings = {
         <button class="btn btn-ghost" id="addColor" style="width:100%">＋ Add a bucket</button>
         <div class="set-note" style="padding:8px 2px">Tap a bucket to edit everything about it. Drag ⠿ to reorder — palettes apply their colors in this order. Goal changes land when you restack.</div>
       </div>
+      <div class="set-group"><h3>Voice</h3>
+        ${Object.entries(VOICES).map(([k,v])=>`
+          <button class="voice-card ${S.settings.voice===k?'on':''}" data-v="${k}">
+            <span class="vc-name">${v.label} <span class="heat">${v.heat}</span></span>
+            <span class="vc-line">“${v.sample}”</span>
+          </button>`).join('')}
+      </div>
       <div class="set-group"><h3>Your data</h3>
         <div class="set-card">
           <div class="set-row set-act" id="expData" role="button" tabindex="0">
@@ -1929,7 +2007,12 @@ const Settings = {
       </div>
       <p class="muted" style="text-align:center;font-size:12px">Kachunk v1 prototype · local-first · no tracking, no server, no streaks</p>`;
     // bindings
-    $$('#settingsBody .voice-card').forEach(el=>el.onclick=()=>{ S.settings.voice=el.dataset.v; save(); this.render(); toast(VOICES[el.dataset.v].sample,{ms:2600}); });
+    $$('#settingsBody .voice-card').forEach(el=>el.onclick=()=>{
+      S.settings.voice=el.dataset.v; save(); this.render();
+      const v = VOICES[el.dataset.v];
+      const pool = [...(v.drop||[]), ...(v.toss||[]).filter(Boolean), v.chipDone, v.allDone, v.perfect, v.restacked].filter(Boolean);
+      toast(pool[Math.floor(Math.random()*pool.length)] || v.sample, {ms:2600});
+    });
     $('#setTime').onchange = e=>{ S.settings.roundupTime = e.target.value||'20:30'; save(); Notif.updateDot(); };
     $('#setSound').onchange = e=>{ S.settings.sound = e.target.checked; save(); if(e.target.checked) sfx('tick'); };
     $('#setTheme').onchange = e=>{ S.settings.theme = e.target.checked?'dark':'light'; save(); applyTheme(); };
@@ -1973,10 +2056,12 @@ const Settings = {
       if(bpKey==='custom') hexes = (S.settings.customPal&&S.settings.customPal.length===6)?S.settings.customPal:blockPalByKey('brand').hex;
       else if(bpKey.startsWith('saved:')){ const sp=(S.settings.savedPals||[]).find(p=>'saved:'+p.id===bpKey); hexes = (sp&&sp.hex)||blockPalByKey('brand').hex; }
       else hexes = blockPalByKey(bpKey).hex;
-      const c = {id:uid(), name:'New thing', icon:'star', pal:PALETTE[S.colors.length%6].key,
-        customHex: bpKey==='pastel' ? null : hexes[S.colors.length%6], shape:'cube', goal:3, slotSize:1};
+      const used = new Set(S.colors.map(x=>x.name.toLowerCase()));
+      const st = STARTERS.find(s=>!used.has(s.name.toLowerCase())) || {name:'New thing', icon:'star', goal:3, slots:1, chips:null};
+      const c = {id:uid(), name:st.name, icon:st.icon, pal:PALETTE[S.colors.length%6].key,
+        customHex: bpKey==='pastel' ? null : hexes[S.colors.length%6], shape:'cube', goal:st.goal, slotSize:st.slots||1};
       S.colors.push(c);
-      S.buckets.push({id:uid(), colorId:c.id, name:c.name, notes:'', chips:null});
+      S.buckets.push({id:uid(), colorId:c.id, name:c.name, notes:'', chips:st.chips?{...st.chips}:null});
       for(let i=0;i<c.goal;i++) S.week.blocks.push({id:uid(), colorId:c.id, status:'tray', via:null, ts:null});
       save(); this.render(); Floor.rebuild();
     };
