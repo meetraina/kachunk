@@ -37,25 +37,30 @@ function phone(shot, w) {
     <img src="../shots/${shot}" style="width:100%;display:block"></div>`;
 }
 
-// ── 1 · Store screenshots 1080×1920 ──
+// ── 1 · Store screenshots 1080×1920 — alternating color floods, not all paper ──
 const STORE = [
-  { shot:'f7-board.png',  file:'store-1-board.png',   k:'THE BOARD',      h:'Your week is a<br>pile of blocks.',        s:'Every block is one time you said you’d do the thing.' },
-  { shot:'f8-board-live.png', file:'store-2-kachunk.png', k:'THE SOUND',  h:'Drag it home.<br><em>Kachunk.</em>',        s:'Real 3D bricks. Real physics. Confetti when it lands.' },
-  { shot:'f9-sweep.png',  file:'store-3-sweep.png',   k:'NO STREAK SHAME', h:'Your week never<br>resets on its own.',    s:'The sweep asks “did you do it?” — you tap what happened.' },
-  { shot:'f10-receipts.png', file:'store-4-receipts.png', k:'RECEIPTS',   h:'Proof, not<br>pressure.',                  s:'Averages built from your actual blocks. No red. Ever.' },
-  { shot:'f5-recap.png',  file:'store-5-fit.png',     k:'REALITY CHECK',  h:'A week that<br>actually fits.',            s:'Kachunk does the math before you overpromise.' },
+  { shot:'f7-board.png',  file:'store-1-board.png',   k:'THE BOARD',      h:'Your week is a<br>pile of blocks.',        s:'Every block is one time you said you’d do the thing.',
+    bg:'#1E262D', ink:'#E9EDF0', sub:'#8C99A3', kick:'#DD7C54' },
+  { shot:'f8-board-live.png', file:'store-2-kachunk.png', k:'THE SOUND',  h:'Drag it home.<br><em>Kachunk.</em>',        s:'Real 3D bricks. Real physics. Confetti when it lands.',
+    bg:'#DD7C54', ink:'#FDFBF7', sub:'rgba(253,251,247,.85)', kick:'#FDFBF7', em:'#33414D' },
+  { shot:'f9-sweep.png',  file:'store-3-sweep.png',   k:'NO STREAK SHAME', h:'Your week never<br>resets on its own.',    s:'The sweep asks “did you do it?” — you tap what happened.',
+    bg:'#F8F6F2', ink:'#33414D', sub:'#8B949B', kick:'#DD7C54' },
+  { shot:'f10-receipts.png', file:'store-4-receipts.png', k:'RECEIPTS',   h:'Proof, not<br>pressure.',                  s:'Averages built from your actual blocks. No red. Ever.',
+    bg:'#8FB0BC', ink:'#22303A', sub:'rgba(34,48,58,.75)', kick:'#FDFBF7' },
+  { shot:'f5-recap.png',  file:'store-5-fit.png',     k:'REALITY CHECK',  h:'A week that<br>actually fits.',            s:'Kachunk does the math before you overpromise.',
+    bg:'#DFC289', ink:'#33414D', sub:'rgba(51,65,77,.72)', kick:'#B95F3D' },
 ];
 function storePage(a) {
   return `<!doctype html><html><head><style>${FONTS}
-  body{width:1080px;height:1920px;display:flex;flex-direction:column;align-items:center;padding:96px 90px 0}
-  em{font-style:normal;color:var(--terra)}
+  body{width:1080px;height:1920px;display:flex;flex-direction:column;align-items:center;padding:96px 90px 0;background:${a.bg};color:${a.ink}}
+  em{font-style:normal;color:${a.em||a.kick}}
   </style></head><body>
     <div style="display:flex;align-items:center;gap:18px;margin-bottom:56px">${markBlock(64)}
-      <span class="brico" style="font-weight:800;font-size:40px">Kachunk<span style="color:var(--terra)">.</span></span></div>
-    <div class="brico" style="font-size:24px;letter-spacing:.22em;color:var(--terra);margin-bottom:22px;font-weight:700">${a.k}</div>
-    <h1 class="brico" style="font-weight:800;font-size:84px;line-height:1.04;text-align:center;margin-bottom:24px">${a.h}</h1>
-    <p style="font-size:31px;color:var(--muted);text-align:center;max-width:760px;line-height:1.4;margin-bottom:64px">${a.s}</p>
-    ${phone(a.shot, 620)}
+      <span class="brico" style="font-weight:800;font-size:40px;color:${a.ink}">Kachunk<span style="color:${a.kick}">.</span></span></div>
+    <div class="brico" style="font-size:24px;letter-spacing:.22em;color:${a.kick};margin-bottom:22px;font-weight:700">${a.k}</div>
+    <h1 class="brico" style="font-weight:800;font-size:84px;line-height:1.04;text-align:center;margin-bottom:24px;color:${a.ink}">${a.h}</h1>
+    <p style="font-size:31px;color:${a.sub};text-align:center;max-width:760px;line-height:1.4;margin-bottom:64px">${a.s}</p>
+    <div style="filter:drop-shadow(0 34px 44px rgba(0,0,0,.28))">${phone(a.shot, 620)}</div>
   </body></html>`;
 }
 
