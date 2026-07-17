@@ -127,10 +127,10 @@ function chipConfigHTML(chips){
         style="${inp};text-align:left"></div>
     <div class="cc-grid">
       <div><label>Daily total</label><input type="number" data-f="total" inputmode="numeric" min="1" value="${cfg.total}" style="${inp}"></div>
-      <div><label>A block =</label><input type="number" data-f="block" inputmode="numeric" min="1" value="${cfg.block}" style="${inp}"></div>
+      <div><label>Block counts at</label><input type="number" data-f="block" inputmode="numeric" min="1" value="${cfg.block}" style="${inp}"></div>
       <div><label>Small chunk =</label><input type="number" data-f="chunk" inputmode="numeric" min="1" value="${cfg.chunk}" style="${inp}"></div>
     </div>
-    <div class="cc-sum">${cfg.perDay}&nbsp;small&nbsp;chunk${cfg.perDay>1?'s':''} of ${cfg.chunk}&nbsp;${u} a&nbsp;day · a block fills every&nbsp;${cfg.perBlock}${blocksPerDay>1?` · up to ${blocksPerDay}&nbsp;blocks&nbsp;a&nbsp;day`:''}</div>
+    <div class="cc-sum">${cfg.perDay}&nbsp;small&nbsp;chunk${cfg.perDay>1?'s':''} of ${cfg.chunk}&nbsp;${u} a&nbsp;day · a block fills every&nbsp;${cfg.perBlock}${cfg.block<cfg.total?` — ${cfg.block}&nbsp;still&nbsp;counts,&nbsp;even&nbsp;short&nbsp;of&nbsp;your&nbsp;${cfg.total}&nbsp;total`:''}${blocksPerDay>1?` · up to ${blocksPerDay}&nbsp;blocks&nbsp;a&nbsp;day`:''}</div>
   </div>`;
 }
 function bindChipConfig(card, getChips, upd){
@@ -259,7 +259,7 @@ const STARTERS = [
   {name:'Move',      icon:'dumbbell',   pal:'gentlemist',   goal:3, slots:2},
   {name:'Meal Prep', icon:'utensils',   pal:'dreamysand',  goal:2, slots:1},
   {name:'Social',    icon:'smile',      pal:'goldenglow',  goal:2, slots:3},
-  {name:'Water',     icon:'droplet',    pal:'cloudyhaze',   goal:7, slots:1, chips:{unit:'glasses', total:8, chunk:1, block:8}},
+  {name:'Water',     icon:'droplet',    pal:'cloudyhaze',   goal:7, slots:1, chips:{unit:'glasses', total:8, chunk:1, block:6}},
   {name:'Deep Work', icon:'brain',      pal:'softhoney',   goal:4, slots:2},
   {name:'Family',    icon:'heart',      pal:'peachwhisper',       goal:2, slots:1},
   {name:'Rest',      icon:'moon',       pal:'cloudyhaze', goal:3, slots:1},
@@ -728,7 +728,7 @@ const OB = {
         }).join('')}
           <button class="chip white" data-custom="1">＋ Your own</button>
         </div>
-        <div style="color:rgba(253,251,247,.85);font-size:13.5px">${d.colors.length ? d.colors.length+' picked — you can rename, resize, and set goals next.' : 'Pick a few. Six max.'}</div>`;
+        <div style="color:rgba(253,251,247,.85);font-size:13.5px">${d.colors.length ? d.colors.length+' of 6 picked — you can rename, resize, and set goals next.' : 'Pick a few — six max, keeps the board easy to hold.'}</div>`;
       $$('#obBody .chip[data-starter]').forEach(ch=>ch.onclick=()=>{
         const st = STARTERS.find(x=>x.name===ch.dataset.starter);
         const has = d.colors.findIndex(c=>c.starter===st.name);
@@ -1689,6 +1689,11 @@ const Floor = {
           save();
           sfx('drop'); buzz(10); this.syncBuckets(); this.updateHeader();
           this.burst(r.x+r.w/2, r.y+18, palFor(c), true);
+          const sheetEl = document.querySelector('#sheet');
+          if(sheetEl && sheetEl.dataset.bkId===bucket.id){
+            const weekLine = sheetEl.querySelector('#bsWeekLine');
+            if(weekLine){ const d2=droppedCount(colorId), l2=trayBlocks(colorId).length; weekLine.textContent = `${d2}/${c.goal} this week${l2?` · ${l2} on the floor`:''}`; }
+          }
         }});
     });
     return targets.length;
@@ -1990,7 +1995,7 @@ const BucketSheet = {
     const done = droppedCount(c.id), left = trayBlocks(c.id).length;
     let html = `
       <h3><span style="display:inline-flex;width:30px;height:30px;border-radius:9px;background:${p.fill};border:2px solid ${p.edge};align-items:center;justify-content:center;vertical-align:-7px;margin-right:8px">${ic(c.icon)}</span>${esc(bk.name)}</h3>
-      <p class="sh-sub mono">${done}/${c.goal} this week${left?` · ${left} on the floor`:''}</p>
+      <p class="sh-sub mono" id="bsWeekLine">${done}/${c.goal} this week${left?` · ${left} on the floor`:''}</p>
       ${bk.notes?`<p style="font-size:14px;color:var(--text);background:var(--inset);border-radius:12px;padding:10px 12px">${esc(bk.notes)}</p>`:''}`;
     const cfg = chunkCfg(bk.chips);
     const chunkLabel = t => `Today's small chunks — ${t}/${cfg.perDay}`
@@ -2017,6 +2022,7 @@ const BucketSheet = {
         <button class="btn btn-primary" id="shDrop" ${left?'':'disabled style="opacity:.5"'}>Kachunk ${left?'it':'—'} in</button>
       </div>`;
     Sheet.open(html);
+    const sheetEl = $('#sheet'); if(sheetEl) sheetEl.dataset.bkId = bk.id;
     let n = 1;
     const val = $('#cntVal');
     $('#cntMinus').onclick = ()=>{ n = clamp(n-1,1,Math.max(left,1)); val.textContent = n; };
@@ -2032,6 +2038,7 @@ const BucketSheet = {
         const today = S.week.chips[bk.id]?.[dayKey()] || 0;
         $$('.chip-cell', $('#sheet')).forEach((el,k)=>el.classList.toggle('on', k<today));
         $('.bc-label', $('#sheet')).innerHTML = chunkLabel(today);
+        const weekLine = $('#bsWeekLine'); if(weekLine){ const d2=droppedCount(c.id), l2=trayBlocks(c.id).length; weekLine.textContent = `${d2}/${c.goal} this week${l2?` · ${l2} on the floor`:''}`; }
       };
       $('#chipPlus').onclick = ()=>{
         S.week.chips[bk.id] = S.week.chips[bk.id]||{};
@@ -2294,7 +2301,7 @@ const Settings = {
       </div>
       <div class="set-group"><h3>Buckets & goals</h3>
         <div id="setColors">${S.colors.map(c=>this.colorRow(c)).join('')}</div>
-        <button class="btn btn-ghost" id="addColor" style="width:100%">＋ Add a bucket</button>
+        <button class="btn btn-ghost" id="addColor" style="width:100%" ${S.colors.length>=6?'disabled style="opacity:.5"':''}>${S.colors.length>=6?"Six\u2019s the max — swap one out to add another":`＋ Add a bucket (${S.colors.length}/6)`}</button>
         <div class="set-note" style="padding:8px 2px">Tap a bucket to edit everything about it. Drag ⠿ to reorder — palettes apply their colors in this order. Goal changes land when you restack.</div>
       </div>
       <div class="set-group"><h3>Voice</h3>
