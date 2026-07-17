@@ -2210,7 +2210,7 @@ const BucketSheet = {
     const p = palFor(c);
     const done = droppedCount(c.id), left = trayBlocks(c.id).length;
     let html = `
-      <h3><span style="display:inline-flex;width:30px;height:30px;border-radius:9px;background:${p.fill};border:2px solid ${p.edge};align-items:center;justify-content:center;vertical-align:-7px;margin-right:8px">${ic(c.icon)}</span>${esc(bk.name)}</h3>
+      <h3><span class="swatch" style="display:inline-flex;width:30px;height:30px;border-radius:9px;background:${p.fill};border-color:${p.edge};--swk:${iconInkFor(c, p.fill)};vertical-align:-7px;margin-right:8px">${ic(c.icon)}</span>${esc(bk.name)}</h3>
       <p class="sh-sub mono" id="bsWeekLine">${done}/${c.goal} this week${left?` · ${left} on the floor`:''}</p>
       ${bk.notes?`<p style="font-size:14px;color:var(--text);background:var(--inset);border-radius:12px;padding:10px 12px">${esc(bk.notes)}</p>`:''}`;
     const cfg = chunkCfg(bk.chips);
