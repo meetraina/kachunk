@@ -23,39 +23,25 @@ const { chromium } = require('playwright');
   await page.click('#obNext'); await page.waitForTimeout(350);
   await page.screenshot({ path: 'shots/f6-voice.png' });
   await page.click('#obNext'); await page.waitForTimeout(2600);
+
+  // lived-in shots come from the demo world (rich placeholder data, never persisted)
+  await page.goto('http://localhost:8484/index.html?demo=1'); await page.waitForTimeout(2400);
   await page.screenshot({ path: 'shots/f7-board.png' });
-  // plan two blocks into today
-  const drag = async (fy) => {
-    const from = await page.evaluate(() => {
-      const bs = [...Floor.bodies.values()].filter(b=>b.position.y < Floor.planY()-20).sort((a,b)=>a.position.y-b.position.y);
-      const b = bs[0]; const st = document.getElementById('floorStage').getBoundingClientRect();
-      return b ? { x: b.position.x + st.left, y: b.position.y + st.top, top: st.top, h: st.height } : null;
-    });
-    if (!from) return;
-    const toY = from.top + from.h * fy, toX = 190;
-    await page.mouse.move(from.x, from.y); await page.mouse.down(); await page.waitForTimeout(130);
-    for (let i = 1; i <= 12; i++) { await page.mouse.move(from.x+(toX-from.x)*i/12, from.y+(toY-from.y)*i/12); await page.waitForTimeout(28); }
-    await page.waitForTimeout(200); await page.mouse.up(); await page.waitForTimeout(650);
-  };
-  await drag(0.80); await drag(0.80);
-  // drop one on its bucket
+  // bank one block for the confetti shot
   const st1 = await page.evaluate(() => {
-    const grabbed = [...Floor.bodies.values()][0];
-    const S2 = JSON.parse(localStorage.getItem('kachunk.v1'));
-    const bi = S2.buckets.findIndex(bk => bk.colorId === grabbed.colorId);
+    const blk = [...Floor.bodies.values()].find(b => !b.isChip && b.position.y < Floor.planY());
+    const st = document.getElementById('floorStage').getBoundingClientRect();
+    const bi = S.buckets.findIndex(bk => bk.colorId === blk.colorId);
     const br = document.querySelectorAll('.bucket-hit')[bi].getBoundingClientRect();
-    const stg = document.getElementById('floorStage').getBoundingClientRect();
-    return { fx: grabbed.position.x + stg.left, fy: grabbed.position.y + stg.top, tx: br.left+br.width/2, ty: br.top+br.height/2 };
+    return { fx: blk.position.x + st.left, fy: blk.position.y + st.top, tx: br.left+br.width/2, ty: br.top+br.height/2 };
   });
   await page.mouse.move(st1.fx, st1.fy); await page.mouse.down(); await page.waitForTimeout(140);
   for (let i = 1; i <= 12; i++) { await page.mouse.move(st1.fx+(st1.tx-st1.fx)*i/12, st1.fy+(st1.ty-st1.fy)*i/12); await page.waitForTimeout(30); }
-  await page.waitForTimeout(250); await page.mouse.up(); await page.waitForTimeout(1200);
+  await page.waitForTimeout(250); await page.mouse.up(); await page.waitForTimeout(700);
   await page.screenshot({ path: 'shots/f8-board-live.png' });
-  // sweep
   await page.evaluate(() => Floor.enterSweep()); await page.waitForTimeout(500);
   await page.screenshot({ path: 'shots/f9-sweep.png' });
   await page.evaluate(() => Floor.exitSweep()); await page.waitForTimeout(300);
-  // receipts + settings (quiet style)
   await page.click('#btnReceipts'); await page.waitForTimeout(500);
   await page.screenshot({ path: 'shots/f10-receipts.png' });
   await page.click('#receiptsBack'); await page.waitForTimeout(250);

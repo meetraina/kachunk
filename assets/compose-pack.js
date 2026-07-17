@@ -42,7 +42,7 @@ const STORE = [
   { shot:'f7-board.png',  file:'store-1-board.png',   k:'THE BOARD',      h:'Your week is a<br>pile of blocks.',        s:'Every block is one time you said you’d do the thing.',
     bg:'#1E262D', ink:'#E9EDF0', sub:'#8C99A3', kick:'#DD7C54' },
   { shot:'f8-board-live.png', file:'store-2-kachunk.png', k:'THE SOUND',  h:'Drag it home.<br><em>Kachunk.</em>',        s:'Real 3D bricks. Real physics. Confetti when it lands.',
-    bg:'#DD7C54', ink:'#FDFBF7', sub:'rgba(253,251,247,.85)', kick:'#FDFBF7', em:'#33414D' },
+    bg:'#DD7C54', ink:'#FDFBF7', sub:'rgba(253,251,247,.85)', kick:'#FDFBF7' },
   { shot:'f9-sweep.png',  file:'store-3-sweep.png',   k:'NO STREAK SHAME', h:'Your week never<br>resets on its own.',    s:'The sweep asks “did you do it?” — you tap what happened.',
     bg:'#F8F6F2', ink:'#33414D', sub:'#8B949B', kick:'#DD7C54' },
   { shot:'f10-receipts.png', file:'store-4-receipts.png', k:'RECEIPTS',   h:'Proof, not<br>pressure.',                  s:'Averages built from your actual blocks. No red. Ever.',
