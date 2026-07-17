@@ -134,11 +134,11 @@ function chipConfigHTML(chips, goal, name){
   const inp = 'border:none;background:var(--surface);border-radius:10px;padding:9px 12px;font:inherit;font-size:15px;color:var(--ink);width:100%;text-align:center';
   const gsel = goal!==undefined ? Math.min(Math.max(Math.round(goal)||7,1),7) : 7;
   return `<div class="chip-config">
-    <div class="be-lab" style="margin-top:14px">How much ${name?esc(name)+' ':''}do you want to track per day?</div>
+    <div class="be-lab" style="margin-top:14px">How much do you want to track per day?</div>
     <div class="cc-main">
-      <input type="number" data-f="total" inputmode="numeric" min="1" value="${cfg.total}" aria-label="Daily total" style="${inp};flex:0 0 92px">
-      <input type="text" data-f="unit" value="${esc(chips.unit||'')}" placeholder="calories, ounces, minutes…" maxlength="18"
-        aria-label="Unit" style="${inp};text-align:left;flex:1;min-width:0">
+      <input type="number" data-f="total" inputmode="numeric" min="1" value="${cfg.total}" aria-label="Daily total" style="${inp};flex:1;min-width:0">
+      <input type="text" data-f="unit" value="${esc(chips.unit||'')}" placeholder="oz, cal…" maxlength="18"
+        aria-label="Unit" style="${inp};flex:0 0 32%">
     </div>
     <div class="cc-grid${goal!==undefined?' cc-3':''}">
       ${goal!==undefined?`<div><label># of days</label><select data-f="days" aria-label="Days per week" style="${inp};appearance:none;-webkit-appearance:none;text-align-last:center">${[1,2,3,4,5,6,7].map(d=>`<option value="${d}"${gsel===d?' selected':''}>${d===7?'everyday':d+(d===1?' day':' days')}</option>`).join('')}</select></div>`:''}
@@ -820,7 +820,7 @@ const OB = {
     this.pickEdit = null; this.newDraft = null; this.pickAll = false;
     show('#screen-onboard'); this.render();
   },
-  steps(){ return ['name','pick','palette','recap','voice']; },
+  steps(){ return ['name','pick','palette', ...this.draft.colors.map((c,i)=>'bucket:'+i), 'recap','voice','go']; },
   weeklyGoalSlots(){ return this.draft.colors.reduce((a,c)=>a+(c.goal*(c.slots||1)),0); },
 
   paint(bg, inkOverride){
@@ -851,28 +851,26 @@ const OB = {
 
     if(key==='pick'){
       this.paint('#DFC289', '#33414D');
-      const openId = this.pickEdit;
-      const collapsed = c=>{ const p = palFor(c); return `<button type="button" class="pk-card on" data-open="${c.id}">
+      // choosing only — each pick gets its own setup page after the palette step
+      const picked = c=>{ const p = palFor(c); return `<button type="button" class="pk-card on" data-unpick="${c.id}">
           <span class="swatch pk-sw" style="background:${p.fill};border-color:${p.edge};--swk:${iconInkFor(c,p.fill)}">${ic(c.icon)}</span>
-          <span class="pk-name">${esc(c.name)}</span><span class="pk-act">${ic('pen')}</span></button>`; };
+          <span class="pk-name">${esc(c.name)}</span><span class="pk-act">✓</span></button>`; };
       const cardFor = st=>{
         const c = d.colors.find(x=>x.starter===st.name);
-        if(c && openId===c.id) return `<div class="pk-expand">${bucketEditorHTML(c, {draft:true})}</div>`;
-        if(c) return collapsed(c);
+        if(c) return picked(c);
         return `<button type="button" class="pk-card" data-starter="${st.name}">${ic(st.icon)}<span class="pk-name">${st.name}</span><span class="pk-act">＋</span></button>`;
       };
-      const customs = d.colors.filter(c=>!c.starter).map(c=>
-        openId===c.id ? `<div class="pk-expand">${bucketEditorHTML(c, {draft:true})}</div>` : collapsed(c)).join('');
+      const customs = d.colors.filter(c=>!c.starter).map(picked).join('');
       const nd = this.newDraft;
-      const newCard = (openId==='__new' && nd) ? (()=>{ const p = palFor(nd); return `<div class="pk-expand"><div class="bucket-card be-card be-new">
+      const newCard = nd ? (()=>{ const p = palFor(nd); return `<div class="pk-expand"><div class="bucket-card be-card be-new">
           <div class="bc-head">
             <button class="swatch" data-f="look" style="width:46px;height:46px;background:${p.fill};border-color:${p.edge};--swk:${iconInkFor(nd,p.fill)}" title="Change look">${ic(nd.icon)}</button>
             <input type="text" data-f="bname" placeholder="Name your bucket" aria-label="Bucket name" style="font-weight:700;font-size:17px">
           </div>
-          <div class="set-note" style="padding:6px 2px 0">Icon + name together give the best starting guess — everything's tunable after.</div>
+          <div class="set-note" style="padding:6px 2px 0">Icon + name together give the best starting guess — you'll set it up in a moment.</div>
           <div class="sheet-actions" style="margin-top:12px">
             <button class="btn btn-ghost" data-f="cancel" style="flex:none;padding:11px 16px">Cancel</button>
-            <button class="btn btn-primary" data-f="create" style="flex:1">Create</button>
+            <button class="btn btn-primary" data-f="create" style="flex:1">Add it</button>
           </div></div></div>`; })()
         : `<button type="button" class="pk-card" data-custom="1"><span class="pk-name">＋ Your own</span></button>`;
       let gridInner;
@@ -888,27 +886,24 @@ const OB = {
         <h2 class="ob-title">Pick your buckets${d.name?', '+esc(d.name.trim().split(' ')[0]):''}</h2>
         <p class="ob-sub">A bucket is a loose plan, not a commitment. Choose your blocks now, then claim the blocks you complete as you go. That's it.</p>
         <div class="pk-grid">${gridInner}${customs}${moreCard}${newCard}</div>
-        <div style="color:rgba(51,65,77,.72);font-size:13.5px">${d.colors.length ? d.colors.length+' of 6 picked — tap any bucket to tune it.' : 'Pick a few — six max, keeps the board easy to hold.'}</div>`;
+        <div style="color:rgba(51,65,77,.72);font-size:13.5px">${d.colors.length ? d.colors.length+' of 6 picked — you’ll set each one up in a moment.' : 'Pick a few — six max, keeps the board easy to hold.'}</div>`;
       const more = $('#obBody .pk-card[data-more]');
       if(more) more.onclick = ()=>{ this.pickAll = !this.pickAll; this.render(); };
       $$('#obBody .pk-card[data-starter]').forEach(el=>el.onclick=()=>{
         if(d.colors.length>=6) return toast('Six buckets max — keep it holdable.');
         const st = STARTERS.find(x=>x.name===el.dataset.starter);
-        const c = {id:uid(), name:st.name, icon:st.icon, pal:st.pal, shape:'cube', goal:st.goal, slots:st.slots||1, chips:st.chips?{...st.chips}:null, starter:st.name};
-        d.colors.push(c); this.pickEdit = c.id; this.render();
+        d.colors.push({id:uid(), name:st.name, icon:st.icon, pal:st.pal, shape:'cube', goal:st.goal, slots:st.slots||1, chips:st.chips?{...st.chips}:null, starter:st.name});
+        this.render();
       });
-      $$('#obBody .pk-card[data-open]').forEach(el=>el.onclick=()=>{ this.pickEdit = el.dataset.open; this.render(); });
-      const pkBe = $('#obBody .pk-expand .be-card[data-be]');
-      if(pkBe){
-        const c = d.colors.find(x=>x.id===pkBe.dataset.be);
-        bindBucketEditor(pkBe, c, {draft:true, draftColors:d.colors,
-          onChange: ()=>this.render(), onClose: ()=>{ this.pickEdit = null; }});
-      }
+      $$('#obBody .pk-card[data-unpick]').forEach(el=>el.onclick=()=>{
+        d.colors.splice(d.colors.findIndex(x=>x.id===el.dataset.unpick), 1);
+        this.render();
+      });
       const cu = $('#obBody .pk-card[data-custom]');
       if(cu) cu.onclick = ()=>{
         if(d.colors.length>=6) return toast('Six buckets max — keep it holdable.');
         this.newDraft = {id:uid(), name:'', icon:'star', pal:PALETTE[d.colors.length%6].key, shape:'cube'};
-        this.pickEdit = '__new'; this.render();
+        this.render();
       };
       const ndRoot = $('#obBody .be-new');
       if(ndRoot){
@@ -918,16 +913,31 @@ const OB = {
         const createIt = ()=>{
           const nm = (nd.name||'').trim(); if(!nm){ toast('Give it a name first.'); return; }
           const g = starterGuess(nm, nd.icon);
-          const c = {id:nd.id, name:nm, icon:nd.icon, pal:nd.pal, shape:'cube', goal:g.goal, slots:g.slots, chips:g.chips, starter:null};
-        d.colors.push(c);
-          this.newDraft = null; this.pickEdit = c.id; this.render();
+          d.colors.push({id:nd.id, name:nm, icon:nd.icon, pal:nd.pal, shape:'cube', goal:g.goal, slots:g.slots, chips:g.chips, starter:null});
+          this.newDraft = null; this.render();
         };
         nameI.onkeydown = e=>{ if(e.key==='Enter') createIt(); };
         ndRoot.querySelector('[data-f=look]').onclick = ()=>openColorPicker(nd, ()=>this.render());
         ndRoot.querySelector('[data-f=create]').onclick = createIt;
-        ndRoot.querySelector('[data-f=cancel]').onclick = ()=>{ this.newDraft = null; this.pickEdit = null; this.render(); };
+        ndRoot.querySelector('[data-f=cancel]').onclick = ()=>{ this.newDraft = null; this.render(); };
         if(!nd.name) setTimeout(()=>nameI.focus(), 60);
       }
+    }
+
+    if(key && key.startsWith('bucket:')){
+      const i = +key.split(':')[1];
+      const c = d.colors[i];
+      if(!c){ this.step = this.steps().indexOf('recap'); this.render(); return; }
+      const p = palFor(c);
+      this.paint(p.fill, inkFor(p.fill));
+      b.innerHTML = `
+        <div class="ob-count" style="color:var(--obInk);opacity:.65">Bucket ${i+1} of ${d.colors.length}</div>
+        <h2 class="ob-title">Make ${esc(c.name)} yours</h2>
+        <p class="ob-sub">Tweak anything — or just keep going.</p>
+        ${bucketEditorHTML(c, {draft:true, actions:false})}`;
+      const be = $('#obBody .be-card[data-be]');
+      if(be) bindBucketEditor(be, c, {draft:true, draftColors:d.colors,
+        onChange: ()=>this.render(), onClose: ()=>{}});
     }
 
     if(key==='palette'){
@@ -1026,7 +1036,21 @@ const OB = {
       $('#obTime').onchange = e=>d.roundupTime = e.target.value || '20:30';
       $$('#obBody .voice-card').forEach(el=>el.onclick=()=>{ d.voice = el.dataset.v; this.render(); });
     }
-    $('#obNext').textContent = key==='voice' ? 'Build my floor' : 'Next';
+
+    if(key==='go'){
+      this.paint('#F8F6F2', '#33414D');
+      const first = d.name ? esc(d.name.trim().split(' ')[0]) : '';
+      const blocks = d.colors.reduce((a,c)=>a+c.goal, 0);
+      b.innerHTML = `
+        <div style="display:flex;flex-direction:column;align-items:center;text-align:center;padding-top:9vh">
+          <div class="mark-block" aria-hidden="true"><b>k</b><span>.</span></div>
+          <h2 class="ob-title">You're ready${first?', '+first:''}.</h2>
+          <p class="ob-sub mono" style="margin:2px 0 18px;opacity:.75">${d.colors.length} bucket${d.colors.length===1?'':'s'} · ${blocks} blocks a week</p>
+          <p class="ob-sub" style="max-width:300px">Do the thing, drop the block, hear the sound. Nothing here can break.</p>
+        </div>`;
+    }
+    $('#obNext').textContent = key==='go' ? 'KACHUNK — let’s go' : 'Next';
+    $('#obNext').classList.toggle('obnext-ink', key==='go');
   },
 
   next(){
@@ -1093,7 +1117,7 @@ function bucketEditorHTML(c, opts={}){
       <button class="swatch" data-f="look" style="width:46px;height:46px;background:${p.fill};border-color:${p.edge};--swk:${iconInkFor(c,p.fill)}" title="Change look">${ic(c.icon)}</button>
       <input type="text" data-f="bname" value="${esc(c.name)}" aria-label="Bucket name" style="font-weight:700;font-size:17px">
     </div>
-    ${chipsHost ? `<div class="be-lab">How does ${esc(c.name)} happen?</div>
+    ${chipsHost ? `<div class="be-lab">How does <em class="be-name">${esc(c.name)}</em> happen?</div>
     <div class="mode-pick">
       <button type="button" class="mode-card ${!chipsHost.chips?'on':''}" data-mode="chunk">
         <strong>Start to Finish</strong>
@@ -1116,15 +1140,10 @@ function bucketEditorHTML(c, opts={}){
       </div>
       <button data-f="s+" aria-label="Bigger">＋</button>
     </div>
-    <div class="be-lab">Icon color</div>
-    <div class="seg segsw" data-f="ink">${(eff=>`
-      <button data-k="ink" class="${eff==='ink'?'on':''}" aria-label="Ink" title="Ink"><i style="background:#33414D;box-shadow:inset 0 0 0 1px var(--hairline)"></i></button>
-      <button data-k="paper" class="${eff==='paper'?'on':''}" aria-label="Paper" title="Paper"><i style="background:#FDFBF7;box-shadow:inset 0 0 0 1px var(--hairline)"></i></button>`)(c.iconInk || (inkFor(p.fill)==='#33414D'?'ink':'paper'))}
-    </div>
-    <div class="sheet-actions" style="margin-top:14px">
+    ${opts.actions===false?'':`<div class="sheet-actions" style="margin-top:14px">
       <button class="btn-danger" data-f="del" style="flex:none;padding:11px 16px">Remove</button>
       <button class="btn btn-primary" data-f="done" style="flex:1">Done</button>
-    </div>
+    </div>`}
   </div>`;
 }
 
@@ -1151,10 +1170,6 @@ function bindBucketEditor(root, c, opts={}){
   on('s-', ()=>{ c[slotKey] = Math.max(0.5,(c[slotKey]||1)-0.5); commit(); });
   on('s+', ()=>{ c[slotKey] = Math.min(8,(c[slotKey]||1)+0.5); commit(); });
   drawSizeBlock(f('scv'), c, c[slotKey]||1);
-  root.querySelectorAll('[data-f="ink"] button').forEach(el=>el.onclick = ()=>{
-    c.iconInk = el.dataset.k;
-    commit();
-  });
   if(chipsHost){
     root.querySelectorAll('.mode-card').forEach(btn=>btn.onclick = ()=>{
       const toAllday = btn.dataset.mode==='allday';
@@ -1164,7 +1179,7 @@ function bindBucketEditor(root, c, opts={}){
     });
     bindChipConfig(root, ()=>chipsHost.chips, ()=>commit(), {set:setGoal});
   }
-  f('del').onclick = ()=>{
+  on('del', ()=>{
     if(!confirm(`Remove the ${c.name} bucket${isDraft?'':' and its blocks'}?`)) return;
     if(isDraft){ opts.draftColors.splice(opts.draftColors.indexOf(c),1); }
     else {
@@ -1173,8 +1188,8 @@ function bindBucketEditor(root, c, opts={}){
       S.week.blocks = S.week.blocks.filter(b=>b.colorId!==c.id);
     }
     onClose(); commit();
-  };
-  f('done').onclick = ()=>{ onClose(); onChange(); };
+  });
+  on('done', ()=>{ onClose(); onChange(); });
 }
 
 /* horizontal drag-to-reorder (palette preview dots) */
@@ -1276,6 +1291,11 @@ function openColorPicker(c, onDone){
       <input type="text" id="pickHex" class="mono" value="${c.customHex||''}" placeholder="#A1B2C3" maxlength="7" aria-label="Hex code" style="flex:1;min-width:0;border:2px solid var(--hairline);border-radius:10px;padding:10px 12px;font:inherit;background:var(--inset);color:var(--ink)">
       <button class="btn btn-primary" id="pickUse" style="padding:11px 18px">Use it</button>
     </div>
+    <div class="bc-label" style="margin-top:16px">Icon color</div>
+    <div class="seg segsw" id="pickInk">${(eff=>`
+      <button data-k="ink" class="${eff==='ink'?'on':''}" aria-label="Ink" title="Ink"><i style="background:#33414D;box-shadow:inset 0 0 0 1px var(--hairline)"></i></button>
+      <button data-k="paper" class="${eff==='paper'?'on':''}" aria-label="Paper" title="Paper"><i style="background:#FDFBF7;box-shadow:inset 0 0 0 1px var(--hairline)"></i></button>`)(c.iconInk || (inkFor(cur.fill)==='#33414D'?'ink':'paper'))}
+    </div>
     <div class="bc-label" style="margin-top:16px">Icon — ${lib.length} to choose from</div>
     <input type="search" id="iconSearch" placeholder="search icons…" style="width:100%;border:2px solid var(--hairline);border-radius:10px;padding:9px 12px;font:inherit;background:var(--inset);color:var(--ink);margin-bottom:10px">
     <div id="iconGrid" style="display:flex;flex-wrap:wrap;gap:8px;max-height:240px;overflow-y:auto">${iconGrid('')}</div>`);
@@ -1291,6 +1311,11 @@ function openColorPicker(c, onDone){
     });
   };
   bindIcons();
+  $$('#pickInk button').forEach(el=>el.onclick = ()=>{
+    c.iconInk = el.dataset.k;
+    $$('#pickInk button').forEach(b=>b.classList.toggle('on', b===el));
+    onDone(); // repaint the host behind the sheet; stay open — color/icon are still being chosen
+  });
   $('#iconSearch').oninput = e=>{ $('#iconGrid').innerHTML = iconGrid(e.target.value.trim().toLowerCase().replace(/[ -]/g,'_')); bindIcons(); };
   $$('.pickdot').forEach(el=>el.onclick=()=>{
     if(el.dataset.hex){ c.customHex = el.dataset.hex; }
