@@ -128,19 +128,22 @@ function chunkVizHTML(cfg){
     <div class="cc-cap">Each small chunk is ${cfg.chunk} ${u}. Your block counts at ${cfg.block}${cfg.block<cfg.total?` — ${cfg.total} is the full day`:''}.${bpd>1?` Up to ${bpd} blocks a day.`:''}</div>
   </div>`;
 }
-function chipConfigHTML(chips, goal){
+function chipConfigHTML(chips, goal, name){
   if(!chips) return '';
   const cfg = chunkCfg(chips);
   const inp = 'border:none;background:var(--surface);border-radius:10px;padding:9px 12px;font:inherit;font-size:15px;color:var(--ink);width:100%;text-align:center';
+  const gsel = goal!==undefined ? Math.min(Math.max(Math.round(goal)||7,1),7) : 7;
   return `<div class="chip-config">
-    <div class="cc-row"><label>What are you counting?</label>
+    <div class="be-lab" style="margin-top:14px">How much ${name?esc(name)+' ':''}do you want to track per day?</div>
+    <div class="cc-main">
+      <input type="number" data-f="total" inputmode="numeric" min="1" value="${cfg.total}" aria-label="Daily total" style="${inp};flex:0 0 92px">
       <input type="text" data-f="unit" value="${esc(chips.unit||'')}" placeholder="calories, ounces, minutes…" maxlength="18"
-        style="${inp};text-align:left"></div>
-    <div class="cc-grid">
-      <div><label>Daily total</label><input type="number" data-f="total" inputmode="numeric" min="1" value="${cfg.total}" style="${inp}"></div>
-      ${goal!==undefined?`<div><label># of days</label><input type="number" data-f="days" inputmode="numeric" min="1" max="7" value="${goal}" style="${inp}"></div>`:''}
+        aria-label="Unit" style="${inp};text-align:left;flex:1;min-width:0">
+    </div>
+    <div class="cc-grid${goal!==undefined?' cc-3':''}">
+      ${goal!==undefined?`<div><label># of days</label><select data-f="days" aria-label="Days per week" style="${inp};appearance:none;-webkit-appearance:none;text-align-last:center">${[1,2,3,4,5,6,7].map(d=>`<option value="${d}"${gsel===d?' selected':''}>${d===7?'everyday':d+(d===1?' day':' days')}</option>`).join('')}</select></div>`:''}
       <div><label>Small chunk</label><input type="number" data-f="chunk" inputmode="numeric" min="1" value="${cfg.chunk}" style="${inp}"></div>
-      <div><label>Minimum amount</label><input type="number" data-f="block" inputmode="numeric" min="1" value="${cfg.block}" style="${inp}"></div>
+      <div><label>Minimum</label><input type="number" data-f="block" inputmode="numeric" min="1" value="${cfg.block}" style="${inp}"></div>
     </div>
     ${chunkVizHTML(cfg)}
   </div>`;
@@ -280,28 +283,28 @@ const STARTERS = [
   {name:'Run',         icon:'flame',       pal:'peachwhisper', goal:3, slots:2, cat:'Body & movement'},
   {name:'Ride',        icon:'bike',        pal:'goldenglow',   goal:2, slots:2, cat:'Body & movement'},
   {name:'Swim',        icon:'waves',       pal:'gentlemist',   goal:2, slots:2, cat:'Body & movement'},
-  {name:'Stretch',     icon:'heart_pulse', pal:'cloudyhaze',   goal:4, slots:1, cat:'Body & movement'},
+  {name:'Stretch',     icon:'heart_pulse', pal:'cloudyhaze',   goal:4, slots:0.5, cat:'Body & movement'},
   {name:'Yoga',        icon:'sun',         pal:'softhoney',    goal:3, slots:2, cat:'Body & movement'},
   {name:'Cardio',      icon:'activity',    pal:'peachwhisper', goal:3, slots:2, cat:'Body & movement'},
   {name:'Dance',       icon:'party_popper',pal:'goldenglow',   goal:1, slots:2, cat:'Body & movement'},
   {name:'Team sport',  icon:'trophy',      pal:'dreamysand',   goal:1, slots:3, cat:'Body & movement'},
   {name:'Race prep',   icon:'medal',      pal:'gentlemist',   goal:3, slots:2, cat:'Body & movement'},
-  {name:'Push-ups',    icon:'dumbbell',    pal:'cloudyhaze',   goal:5, slots:1, cat:'Body & movement', chips:{unit:'push-ups', total:50, chunk:10, block:30}},
+  {name:'Push-ups',    icon:'dumbbell',    pal:'cloudyhaze',   goal:5, slots:0.5, cat:'Body & movement', chips:{unit:'push-ups', total:50, chunk:10, block:30}},
   {name:'Hike',        icon:'mountain',    pal:'softhoney',    goal:1, slots:3, cat:'Body & movement'},
   {name:'Outside',     icon:'leaf',        pal:'softhoney',    goal:4, slots:1, cat:'Body & movement', top:true},
   /* Food & drink */
   {name:'Meal Prep',   icon:'utensils',    pal:'dreamysand',   goal:2, slots:1, cat:'Food & drink', top:true},
-  {name:'Water',       icon:'droplet',     pal:'cloudyhaze',   goal:7, slots:1, cat:'Food & drink', top:true, chips:{unit:'oz', total:68, chunk:8, block:48}},
+  {name:'Water',       icon:'droplet',     pal:'cloudyhaze',   goal:7, slots:0.5, cat:'Food & drink', top:true, chips:{unit:'oz', total:68, chunk:8, block:48}},
   {name:'Cook',        icon:'chef_hat',    pal:'peachwhisper', goal:4, slots:1, cat:'Food & drink'},
-  {name:'Veggies',     icon:'carrot',      pal:'dreamysand',   goal:5, slots:1, cat:'Food & drink', chips:{unit:'servings', total:4, chunk:1, block:3}},
-  {name:'Fruit',       icon:'apple',       pal:'peachwhisper', goal:5, slots:1, cat:'Food & drink', chips:{unit:'servings', total:3, chunk:1, block:2}},
-  {name:'Protein',     icon:'egg',         pal:'cloudyhaze',   goal:5, slots:1, cat:'Food & drink', chips:{unit:'grams', total:100, chunk:20, block:80}},
+  {name:'Veggies',     icon:'carrot',      pal:'dreamysand',   goal:5, slots:0.5, cat:'Food & drink', chips:{unit:'servings', total:4, chunk:1, block:3}},
+  {name:'Fruit',       icon:'apple',       pal:'peachwhisper', goal:5, slots:0.5, cat:'Food & drink', chips:{unit:'servings', total:3, chunk:1, block:2}},
+  {name:'Protein',     icon:'egg',         pal:'cloudyhaze',   goal:5, slots:0.5, cat:'Food & drink', chips:{unit:'grams', total:100, chunk:20, block:80}},
   {name:'Good lunch',  icon:'salad',       pal:'gentlemist',   goal:4, slots:1, cat:'Food & drink'},
   {name:'Bake',        icon:'cake',        pal:'goldenglow',   goal:1, slots:2, cat:'Food & drink'},
   {name:'New recipe',  icon:'cookie',      pal:'softhoney',    goal:1, slots:2, cat:'Food & drink'},
   {name:'Slow coffee', icon:'coffee',      pal:'softhoney',    goal:3, slots:1, cat:'Food & drink'},
   {name:'Groceries',   icon:'shopping_cart',pal:'gentlemist',  goal:1, slots:1, cat:'Food & drink'},
-  {name:'Calories',    icon:'clipboard_list',pal:'dreamysand', goal:6, slots:1, cat:'Food & drink', chips:{unit:'calories', total:2000, chunk:250, block:1750}},
+  {name:'Calories',    icon:'clipboard_list',pal:'dreamysand', goal:6, slots:0.5, cat:'Food & drink', chips:{unit:'calories', total:2000, chunk:250, block:1750}},
   {name:'Pizza night', icon:'pizza',       pal:'peachwhisper', goal:1, slots:2, cat:'Food & drink'},
   /* Mind & spirit */
   {name:'Deep Work',   icon:'brain',       pal:'softhoney',    goal:4, slots:2, cat:'Mind & spirit', top:true},
@@ -311,12 +314,12 @@ const STARTERS = [
   {name:'Study',       icon:'graduation_cap',pal:'gentlemist', goal:3, slots:2, cat:'Mind & spirit'},
   {name:'Language',    icon:'globe',       pal:'goldenglow',   goal:4, slots:1, cat:'Mind & spirit'},
   {name:'Scripture',   icon:'book_open',   pal:'cloudyhaze',   goal:5, slots:1, cat:'Mind & spirit'},
-  {name:'Screen rest', icon:'eye',        pal:'peachwhisper', goal:5, slots:1, cat:'Mind & spirit', chips:{unit:'breaks', total:6, chunk:1, block:4}},
+  {name:'Screen rest', icon:'eye',        pal:'peachwhisper', goal:5, slots:0.5, cat:'Mind & spirit', chips:{unit:'breaks', total:6, chunk:1, block:4}},
   {name:'Daily plan',  icon:'list_checks', pal:'dreamysand',   goal:5, slots:1, cat:'Mind & spirit'},
   {name:'Week plan',   icon:'calendar',   pal:'gentlemist',   goal:1, slots:1, cat:'Mind & spirit'},
   {name:'Puzzles',     icon:'puzzle',      pal:'goldenglow',   goal:2, slots:1, cat:'Mind & spirit'},
   {name:'Pray',        icon:'prayer',      pal:'cloudyhaze',   goal:5, slots:1, cat:'Mind & spirit'},
-  {name:'Gratitude',   icon:'star',        pal:'softhoney',    goal:7, slots:1, cat:'Mind & spirit', chips:{unit:'moments', total:3, chunk:1, block:3}},
+  {name:'Gratitude',   icon:'star',        pal:'softhoney',    goal:7, slots:0.5, cat:'Mind & spirit', chips:{unit:'moments', total:3, chunk:1, block:3}},
   /* People & pets */
   {name:'Family',      icon:'heart',       pal:'peachwhisper', goal:2, slots:1, cat:'People & pets', top:true},
   {name:'Social',      icon:'smile',       pal:'goldenglow',   goal:2, slots:3, cat:'People & pets', top:true},
@@ -338,8 +341,8 @@ const STARTERS = [
   {name:'Lunch break', icon:'armchair',    pal:'dreamysand',   goal:5, slots:1, cat:'Rest & recovery'},
   {name:'Bath night',  icon:'bath',        pal:'gentlemist',   goal:1, slots:1, cat:'Rest & recovery'},
   {name:'Unplug',      icon:'sofa',        pal:'softhoney',    goal:3, slots:1, cat:'Rest & recovery'},
-  {name:'Breathe',     icon:'wind',        pal:'cloudyhaze',   goal:5, slots:1, cat:'Rest & recovery', chips:{unit:'breathers', total:5, chunk:1, block:3}},
-  {name:'Meds',        icon:'pill',        pal:'peachwhisper', goal:7, slots:1, cat:'Rest & recovery', chips:{unit:'doses', total:2, chunk:1, block:2}},
+  {name:'Breathe',     icon:'wind',        pal:'cloudyhaze',   goal:5, slots:0.5, cat:'Rest & recovery', chips:{unit:'breathers', total:5, chunk:1, block:3}},
+  {name:'Meds',        icon:'pill',        pal:'peachwhisper', goal:7, slots:0.5, cat:'Rest & recovery', chips:{unit:'doses', total:2, chunk:1, block:2}},
   {name:'Checkup',     icon:'stethoscope', pal:'gentlemist',   goal:1, slots:1, cat:'Rest & recovery'},
   {name:'Sunlight',    icon:'sun',        pal:'goldenglow',   goal:5, slots:1, cat:'Rest & recovery'},
   {name:'Self-care',   icon:'scissors',    pal:'dreamysand',   goal:2, slots:1, cat:'Rest & recovery'},
@@ -666,6 +669,20 @@ function sfx(kind, opt={}){
       o.frequency.setValueAtTime(120+60*v,t); o.frequency.exponentialRampToValueAtTime(55,t+0.07);
       g.gain.setValueAtTime(0.12*v,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.09);
       o.connect(g); o.start(t); o.stop(t+0.1);
+    } else if(kind==='clink'){
+      // blocks touching blocks: a soft, calming clink — muted wooden wind-chime, never sharp
+      const v = clamp(opt.v||0.5, 0.08, 1);
+      const notes = opt.hi ? [1046.5,1174.7,1318.5,1568,1760] : [523.25,587.33,659.25,783.99,880]; // pentatonic-ish, chips ring an octave up
+      const f = notes[Math.floor(Math.random()*notes.length)] * (1 + (Math.random()-.5)*0.012);
+      const flt = ctx.createBiquadFilter(); flt.type='lowpass'; flt.frequency.value = 2200; flt.Q.value = 0.4;
+      const g = out(); flt.connect(g);
+      const o = ctx.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(f, t);
+      const o2 = ctx.createOscillator(); o2.type='sine'; o2.frequency.setValueAtTime(f*2.41, t); // soft inharmonic partial = woody
+      const g2 = ctx.createGain(); g2.gain.value = 0.22; o2.connect(g2); g2.connect(flt);
+      o.connect(flt);
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.05*v, t+0.008); // gentle attack, no click
+      g.gain.exponentialRampToValueAtTime(0.0008, t+0.16);
+      o.start(t); o.stop(t+0.18); o2.start(t); o2.stop(t+0.12);
     } else if(kind==='slide'){
       // sliding into today: soft descending shoop
       const g = out(); const o = ctx.createOscillator(); o.type='sine';
@@ -952,7 +969,7 @@ const OB = {
             <span class="drag-h" style="color:rgba(51,65,77,.5)" aria-label="Drag to reorder">⠿</span>
             <span class="swatch" style="background:${p.light};border:none;width:32px;height:32px;border-radius:10px;--swk:${iconInkFor(c, p.light)}">${ic(c.icon)}</span>
             <strong style="flex:1;color:#33414D">${esc(c.name)}</strong>
-            <span class="mono" style="font-size:12.5px;color:rgba(51,65,77,.65)">${c.slots||1} slot${(c.slots||1)>1?'s':''} · ${c.goal}×/wk = ${c.goal*(c.slots||1)}</span>
+            <span class="mono" style="font-size:12.5px;color:rgba(51,65,77,.65)">${fmtSlots(c.slots||1)} · ${c.goal}×/wk = ${c.goal*(c.slots||1)}</span>
             <span class="cr-pencil" style="color:rgba(51,65,77,.55)">${ic('pen')}</span>
           </div>`; }).join('')}</div>
         <div class="bc-label" style="margin-top:18px">Slots you'll give one day</div>
@@ -1042,6 +1059,18 @@ const OB = {
 };
 
 /* ── inline bucket editor — expands inside the card (settings rows + recap rows), no modal ── */
+const fmtSlots = v => v===1 ? '1 slot' : `${v} slots`;
+/* the size control's mockup block: the bucket's own block, scaled like the physics floor scales it */
+function drawSizeBlock(cv, c, v){
+  if(!cv) return;
+  const x = cv.getContext('2d');
+  x.setTransform(2,0,0,2,0,0); // canvas is @2x of 96×78 css
+  const p = palFor(c);
+  const size = 22 * (1 + 0.22*(v-1)); // same growth curve as Floor.sizeFor
+  const img = iconImage(c.icon, iconInkFor(c, p.fill));
+  const draw = ()=>{ x.clearRect(0,0,96,78); drawBlockShape(x, 48, 38, size, 'cube', p, -0.07, img); };
+  if(img.complete) draw(); else img.addEventListener('load', draw, {once:true});
+}
 function starterGuess(name, icon){
   const n = (name||'').trim().toLowerCase();
   let cands = n ? STARTERS.filter(s=>{ const sn=s.name.toLowerCase(); return sn===n || n.includes(sn) || sn.includes(n); }) : [];
@@ -1075,18 +1104,23 @@ function bucketEditorHTML(c, opts={}){
         <span>Small chunks that add up — water, calories, gratitude.</span>
       </button>
     </div>
-    <div data-f="chipcfg">${chipConfigHTML(chipsHost.chips, goal)}</div>` : ''}
+    <div data-f="chipcfg">${chipConfigHTML(chipsHost.chips, goal, c.name)}</div>` : ''}
     ${(chipsHost&&chipsHost.chips)?'':`<div class="be-lab">How many times a week?<span>This adds blocks to claim each week.${isDraft?'':' Changes land when you restack.'}</span></div>
     <div class="stepper"><button data-f="g-">−</button><span class="val">${goal}</span><button data-f="g+">＋</button></div>`}
-    <div class="be-lab">How long does it take to complete?<span>This sets the size of your blocks for this bucket.</span></div>
-    <div class="stepper"><button data-f="s-">−</button><span class="val">${slots} slot${slots>1?'s':''}</span><button data-f="s+">＋</button></div>
+    <div class="be-lab">How big is your block?<span>Bigger blocks take more of your day.</span></div>
+    <div class="size-pick">
+      <button data-f="s-" aria-label="Smaller">−</button>
+      <div class="size-stage">
+        <canvas data-f="scv" width="192" height="156" aria-hidden="true"></canvas>
+        <div class="size-cap mono" data-f="scap">${fmtSlots(slots)}</div>
+      </div>
+      <button data-f="s+" aria-label="Bigger">＋</button>
+    </div>
     <div class="be-lab">Icon color</div>
     <div class="seg segsw" data-f="ink">${(eff=>`
       <button data-k="ink" class="${eff==='ink'?'on':''}" aria-label="Ink" title="Ink"><i style="background:#33414D;box-shadow:inset 0 0 0 1px var(--hairline)"></i></button>
       <button data-k="paper" class="${eff==='paper'?'on':''}" aria-label="Paper" title="Paper"><i style="background:#FDFBF7;box-shadow:inset 0 0 0 1px var(--hairline)"></i></button>`)(c.iconInk || (inkFor(p.fill)==='#33414D'?'ink':'paper'))}
     </div>
-    <div class="be-lab">Notes</div>
-    <textarea data-f="notes" placeholder="e.g. 3× = 2 swim + 1 yoga">${esc((isDraft?c.notes:bk&&bk.notes)||'')}</textarea>
     <div class="sheet-actions" style="margin-top:14px">
       <button class="btn-danger" data-f="del" style="flex:none;padding:11px 16px">Remove</button>
       <button class="btn btn-primary" data-f="done" style="flex:1">Done</button>
@@ -1114,20 +1148,22 @@ function bindBucketEditor(root, c, opts={}){
   };
   on('g-', ()=>{ setGoal((isDraft ? c.goal : (S.nextGoals[c.id]??c.goal))-1); commit(); });
   on('g+', ()=>{ setGoal((isDraft ? c.goal : (S.nextGoals[c.id]??c.goal))+1); commit(); });
-  on('s-', ()=>{ c[slotKey] = Math.max(1,(c[slotKey]||1)-1); commit(); });
-  on('s+', ()=>{ c[slotKey] = Math.min(8,(c[slotKey]||1)+1); commit(); });
+  on('s-', ()=>{ c[slotKey] = Math.max(0.5,(c[slotKey]||1)-0.5); commit(); });
+  on('s+', ()=>{ c[slotKey] = Math.min(8,(c[slotKey]||1)+0.5); commit(); });
+  drawSizeBlock(f('scv'), c, c[slotKey]||1);
   root.querySelectorAll('[data-f="ink"] button').forEach(el=>el.onclick = ()=>{
     c.iconInk = el.dataset.k;
     commit();
   });
   if(chipsHost){
     root.querySelectorAll('.mode-card').forEach(btn=>btn.onclick = ()=>{
-      chipsHost.chips = btn.dataset.mode==='allday' ? (chipsHost.chips||freshChunks()) : null;
+      const toAllday = btn.dataset.mode==='allday';
+      if(toAllday && !chipsHost.chips) setGoal(7); // ongoing defaults to everyday
+      chipsHost.chips = toAllday ? (chipsHost.chips||freshChunks()) : null;
       commit();
     });
     bindChipConfig(root, ()=>chipsHost.chips, ()=>commit(), {set:setGoal});
   }
-  f('notes').onchange = e=>{ if(isDraft) c.notes = e.target.value; if(bk) bk.notes = e.target.value; commit(); };
   f('del').onclick = ()=>{
     if(!confirm(`Remove the ${c.name} bucket${isDraft?'':' and its blocks'}?`)) return;
     if(isDraft){ opts.draftColors.splice(opts.draftColors.indexOf(c),1); }
@@ -1607,6 +1643,15 @@ const Floor = {
     Matter.Events.on(this.engine, 'collisionStart', e=>{
       for(const pair of e.pairs){
         const a = pair.bodyA, b = pair.bodyB;
+        // block-on-block: soft ambient clinks, velocity-scaled and throttled so a pile never rattles
+        if(a.blockId && b.blockId && !a.isStatic && !b.isStatic){
+          const rel = Math.hypot(a.velocity.x-b.velocity.x, a.velocity.y-b.velocity.y);
+          const now = performance.now();
+          if(rel > 2.2 && now - (this._lastClink||0) > 90){
+            this._lastClink = now;
+            sfx('clink', {v: clamp(rel/16, 0.12, 0.8), hi: !!(a.isChip || b.isChip)});
+          }
+        }
         const shelf = a.isShelf ? a : (b.isShelf ? b : null);
         if(!shelf) continue;
         const blk = shelf===a ? b : a;
@@ -2426,7 +2471,7 @@ const Settings = {
     const bk = S.buckets.find(b=>b.colorId===c.id);
     if(this.editingId===c.id) return bucketEditorHTML(c, {bucket:bk});
     const goal = S.nextGoals[c.id] ?? c.goal;
-    const meta = [`${goal}×/wk`, (c.slotSize||1)>1?`${c.slotSize} slots`:null, (bk&&bk.chips)?'small chunks':null].filter(Boolean).join(' · ');
+    const meta = [`${goal}×/wk`, (c.slotSize||1)!==1?fmtSlots(c.slotSize):null, (bk&&bk.chips)?'small chunks':null].filter(Boolean).join(' · ');
     return `<div class="color-row cr-tap" data-c="${c.id}" data-ord="${c.id}" role="button">
       <span class="drag-h" aria-label="Drag to reorder">⠿</span>
       <span class="swatch" style="background:${p.fill};border-color:${p.edge};--swk:${iconInkFor(c, p.fill)}">${ic(c.icon)}</span>
