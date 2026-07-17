@@ -1162,7 +1162,7 @@ const Floor = {
           <g transform="translate(38 48) scale(1.05)" fill="none" stroke="${inkFor(p.fill)}" stroke-opacity="0.6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${ICONS[c.icon]||ICONS.star}</g>
         </svg>
         <div style="font-size:12px;font-weight:700;color:var(--ink);line-height:1.15;padding:0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(bk.name)}</div>
-        <div class="mono" style="font-size:11px;color:var(--muted)">${done}/${c.goal}</div>
+        <div class="mono" style="font-size:11px;color:var(--muted)">${done}/${c.goal}${(n=>n?` <span style="color:var(--good);font-weight:700">+${n}</span>`:'')(S.week.blocks.filter(b=>b.colorId===c.id && b.status==='dropped' && b.ts && b.ts.slice(0,10)===dayKey()).length * ((c.slotSize||1)))}</div>
       </button>`;
     }).join('');
     this.bucketRects = $$('#bucketRow .bucket-hit').map(el=>{
@@ -1529,7 +1529,7 @@ const Settings = {
     return `<div class="color-row" data-c="${c.id}">
       <button class="swatch" style="background:${p.fill};border-color:${p.edge};--swk:${inkFor(p.fill)}" title="Change look" data-act="pal">${ic(c.icon)}</button>
       <input type="text" value="${esc(c.name)}" aria-label="Bucket name">
-      <div class="stepper"><button data-act="-">−</button><span class="val">${c.goal}</span><button data-act="+">＋</button></div>
+      <div class="stepper"><button data-act="-">−</button><span class="val">${S.nextGoals[c.id] ?? c.goal}</span><button data-act="+">＋</button></div>
       <button class="row-x" data-act="x" aria-label="Remove">✕</button>
     </div>`;
   },
@@ -1693,7 +1693,7 @@ const Settings = {
   },
   renderGoalHint(row, c){
     const next = S.nextGoals[c.id];
-    row.querySelector('.val').textContent = next!==undefined && next!==c.goal ? `${c.goal}→${next}` : c.goal;
+    row.querySelector('.val').textContent = next!==undefined ? next : c.goal;
   }
 };
 
