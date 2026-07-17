@@ -168,6 +168,26 @@ h1,h2,h3{font-family:"Bricolage Grotesque",system-ui,sans-serif; font-weight:700
 .pal-dots i.empty{background:transparent; box-shadow:none; border:1.5px dashed var(--hairline);}
 .sp-del{flex:none; margin-left:2px; color:var(--muted); font-size:13px; padding:4px 2px 4px 8px; opacity:.7;}
 
+/* tap-to-edit rows + drag reorder */
+.cr-tap{cursor:pointer;}
+.cr-name{flex:1; font-weight:700; font-size:15.5px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.cr-meta{font-size:11.5px; color:var(--muted); flex:none;}
+.cr-chev{color:var(--muted); font-size:19px; flex:none; padding-left:2px; opacity:.7;}
+.drag-h{
+  flex:none; color:var(--muted); opacity:.65; font-size:15px; letter-spacing:1px;
+  padding:8px 6px 8px 2px; cursor:grab; user-select:none; -webkit-user-select:none;
+}
+.dragging{position:relative; z-index:5; opacity:.92; box-shadow:0 10px 26px -10px rgba(0,0,0,.35) !important; transition:none !important;}
+.recap-row .drag-h{padding:4px 4px 4px 0;}
+
+/* segmented control (icon ink) */
+.seg{display:flex; gap:6px; background:var(--inset); border-radius:12px; padding:4px; width:fit-content;}
+.seg button{
+  appearance:none; border:none; background:transparent; cursor:pointer; font:inherit; font-size:13.5px; font-weight:600;
+  color:var(--muted); padding:8px 16px; border-radius:9px;
+}
+.seg button.on{background:var(--surface); color:var(--ink); box-shadow:inset 0 0 0 1.5px rgba(221,124,84,.45);}
+
 /* build-my-own picker sheet: 2 hues per row × 4 shades = 8 swatches per row */
 .cb-preview{margin:0 0 12px; gap:7px; justify-content:center;}
 .cb-preview i{width:26px; height:26px; border-radius:8px;}
@@ -227,7 +247,7 @@ h1,h2,h3{font-family:"Bricolage Grotesque",system-ui,sans-serif; font-weight:700
 }
 .switch input:checked + .knob{background:var(--mark);}
 .switch input:checked + .knob:before{left:23px;}
-.chip-config{display:flex; gap:14px; margin-top:10px;}
+.chip-config{display:block; margin-top:10px;}
 .chip-config label{font-size:12.5px; color:var(--muted); display:block; margin-bottom:3px;}
 
 .time-face{

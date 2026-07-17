@@ -52,6 +52,15 @@ nav .cta:active{opacity:.9}
 .hero .fine{font-size:13px;color:var(--dark-muted);margin-top:16px}
 .hero .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}
 .hero .chips span{font-size:12.5px;color:var(--dark-ink);background:rgba(233,237,240,.08);border:1px solid rgba(233,237,240,.14);border-radius:999px;padding:6px 13px}
+/* sandbox phone frame */
+.phone-frame{
+  width:min(392px, 92vw); height:min(800px, 165vw); margin:44px auto 0;
+  border-radius:44px; background:#10151A; padding:12px;
+  box-shadow:0 40px 90px -30px rgba(30,38,45,.5), inset 0 0 0 2px #2A353E;
+}
+.phone-frame iframe{width:100%; height:100%; border:none; border-radius:34px; background:#1E262D;}
+.fine-note{font-size:13px; color:var(--muted); margin-top:14px;}
+.feat img[src$=".gif"]{background:#1E262D;}
 /* faq */
 details{border-bottom:1px solid var(--hairline);padding:16px 4px}
 details summary{cursor:pointer;font-weight:600;font-size:16.5px;list-style:none;display:flex;justify-content:space-between;gap:12px}
@@ -106,7 +115,7 @@ footer a{color:var(--text)}
   <div class="wrap">
     <nav>
       <a class="logo brico" href="#">Kachunk<span>.</span></a>
-      <a class="cta" href="./">Play it now</a>
+      <a class="cta" href="#sandbox">Try the demo</a>
     </nav>
   </div>
   <div class="wrap">
@@ -115,19 +124,30 @@ footer a{color:var(--text)}
       <h1>The habit tracker<br>you can <em>hold.</em></h1>
       <p class="sub">Your week is a pile of real 3D blocks. Do the thing, drag its block into the bucket — <strong>kachunk.</strong> A habit builder for ADHD brains, visual thinkers, and everyone the calendar keeps losing.</p>
       <div class="btns">
-        <a class="btn-hero" href="./">Start building — free</a>
+        <a class="btn-hero" href="#sandbox">Try it — right here</a>
         <a class="btn-ghost" href="#how">How it works ↓</a>
       </div>
-      <p class="fine">Runs in your browser. No account. Your blocks live on your device.</p>
       <div class="chips">
-        <span>▶ Playable right now</span><span>🔒 Local-first — no server, no tracking</span><span>⌥ Open source</span>
+        <span>Real 3D physics</span><span>Local-first — no account, no tracking</span><span>One notification a day</span>
       </div>
-      <p class="fine" style="margin-top:10px">Web today · iOS &amp; Android on the way</p>
+      <p class="fine" style="margin-top:10px">Coming to iOS &amp; Android · $5.99 once, never a subscription</p>
     </div>
     <div class="hero-shot"><img src="docs/assets/board-shot.png" alt="The Kachunk board — a pile of 3D habit blocks above the week's buckets" onerror="this.parentNode.style.display='none'"></div>
   </div>
 </div>
 <div class="strip"><strong>No streaks. No red. No subscription.</strong> &nbsp;·&nbsp; the week absorbs bad days &nbsp;·&nbsp; misses are never punished</div>
+
+<section id="sandbox">
+  <div class="wrap" style="text-align:center">
+    <div class="kicker">The sandbox</div>
+    <h2>Don't take our word for it. Toss something.</h2>
+    <p class="lede" style="margin:0 auto">A live sandbox with a sample week — drag a block into its bucket, flick one across the board, drop the Water block below the line and watch it shatter into chips.</p>
+    <div class="phone-frame">
+      <iframe src="./?demo=1" title="Kachunk sandbox demo" loading="lazy"></iframe>
+    </div>
+    <p class="fine-note">It's a sandbox, not the app — nothing is saved, and it resets when you leave.</p>
+  </div>
+</section>
 
 <section id="how" class="how">
   <div class="wrap">
@@ -149,9 +169,9 @@ footer a{color:var(--text)}
     <h2>Built for brains that hate habit apps.</h2>
     <p class="lede">Every mechanic is the opposite of the shame machine you've deleted three times.</p>
     <div class="feats">
-      <div class="feat"><img src="docs/assets/store-3-sweep.png" alt="The week sweep — your week never resets on its own"><h3>Zero streak shame</h3><p>No streaks to break, no red anywhere in the app. Weekly buckets absorb a bad Tuesday. The only score is blocks that made it home.</p></div>
-      <div class="feat"><img src="docs/assets/store-2-kachunk.png" alt="Drag it home — real 3D bricks with real physics"><h3>Dopamine you can feel</h3><p>Real 3D bricks, synthesized sound, confetti on every landing. The tracking is the reward — that's the whole trick.</p></div>
-      <div class="feat"><img src="docs/assets/store-5-fit.png" alt="Goal-fit math — a week that actually fits"><h3>A week that actually fits</h3><p>Kachunk does the math before you overpromise, budgets your day in slots, and sends exactly one notification. Ever.</p></div>
+      <div class="feat"><img src="docs/assets/gif-bank.gif" alt="Dragging a block into its bucket — confetti on landing"><h3>Claiming it feels like something</h3><p>Drag the block home and it lands with a thunk, a chime, and confetti. Real 3D bricks, real physics — the tracking is the reward.</p></div>
+      <div class="feat"><img src="docs/assets/gif-toss.gif" alt="Blocks tossed across the board, tumbling in 3D"><h3>Restless hands welcome</h3><p>Toss the blocks, spin them, shake the phone and the pile rattles. It's a fidget object that happens to be your week.</p></div>
+      <div class="feat"><img src="docs/assets/gif-shatter.gif" alt="A block shattering into chips in the today zone"><h3>Big habits break into chips</h3><p>Eight glasses of water isn't one moment. Drop the block into today and it shatters into chips you bank one small win at a time.</p></div>
     </div>
   </div>
 </section>
@@ -175,9 +195,9 @@ footer a{color:var(--text)}
     <div class="kicker">Pricing</div>
     <h2>Pay once. That's the feature.</h2>
     <div class="price-card">
-      <div class="big">$5.99 <small>once, in the app stores</small></div>
-      <p>The web version stays free forever — it's the one you're about to open. Stores get the same app with widgets and sync, for the price of one fancy coffee.</p>
-      <a class="btn-hero" href="./">Play the free version now</a>
+      <div class="big">$5.99 <small>once. that's the whole model.</small></div>
+      <p>No subscription, no premium tier, no "unlock more buckets." Habit apps charging rent is the ADHD tax — Kachunk doesn't collect it.</p>
+      <a class="btn-hero" href="#sandbox">Try the sandbox</a>
     </div>
   </div>
 </section>
@@ -187,12 +207,12 @@ footer a{color:var(--text)}
     <div class="kicker">Questions</div>
     <h2>Fair questions, straight answers.</h2>
     <div style="margin-top:30px">
-      <details><summary>Is it really free?</summary><p>The web version is free, full-featured, and stays that way — no trial clock, no locked features. When Kachunk reaches the app stores it'll be $5.99 once (widgets, sync, notifications that survive iOS). Never a subscription.</p></details>
+      <details><summary>What does it cost?</summary><p>$5.99, once, when it launches on the app stores — that buys the whole thing forever: widgets, sync, notifications. Never a subscription, never in-app purchases. The sandbox on this page is free to poke at any time; it just doesn't save.</p></details>
       <details><summary>Where does my data go?</summary><p>Nowhere. Kachunk is local-first: your blocks live in your browser's storage on your device. There's no account, no server, and no analytics inside the app. You can export a backup file any time and import it on a new phone.</p></details>
       <details><summary>Is this only for ADHD?</summary><p>It was designed with ADHD and visual thinkers in mind — weekly buckets instead of daily streaks, one notification, zero guilt mechanics. But "a habit tracker that doesn't punish you" turns out to be something most brains prefer. (Kachunk is a wellness tool, not a medical treatment.)</p></details>
       <details><summary>How is it different from other habit trackers?</summary><p>Two ways. The unit is the <em>week</em>, not the day — so one bad Tuesday can't break anything. And your habits are physical: real 3D blocks with real physics that you toss, stack, shatter into chips, and drop into buckets. We couldn't find another app that works this way.</p></details>
       <details><summary>What does "no streaks" mean?</summary><p>There is no streak counter anywhere in Kachunk, and nothing ever auto-resets. At the end of the week the sweep asks "did you do it?" — you tap what actually happened, it goes in your receipts, and you restack. Progress you can hold, not a chain you can break.</p></details>
-      <details><summary>When do the iPhone and Android versions land?</summary><p>The web app works on your phone today — add it to your home screen and it behaves like an app, offline included. Store versions are in progress; the web version stays the free way in forever.</p></details>
+      <details><summary>When do the iPhone and Android versions land?</summary><p>They're in progress — the sandbox above is the real product, not a mockup. Follow the build on GitHub, and the store listings will land as soon as the wrapper clears review.</p></details>
     </div>
   </div>
 </section>
@@ -201,7 +221,7 @@ footer a{color:var(--text)}
   <div class="wrap">
     <span class="brico" style="font-weight:800">Kachunk<span style="color:var(--terra)">.</span></span>
     <span>The week you can hold.</span>
-    <span style="margin-left:auto"><a href="./">App</a> · <a href="docs/index.html">Docs</a> · <a href="https://github.com/meetraina/kachunk">GitHub</a></span>
+    <span style="margin-left:auto"><a href="docs/index.html">Docs</a> · <a href="https://github.com/meetraina/kachunk">GitHub</a></span>
   </div>
 </footer>
 </body>

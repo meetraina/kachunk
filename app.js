@@ -356,6 +356,47 @@ const VOICES = {
 /* ── state ── */
 const KEY = 'kachunk.v1';
 let S = null;
+const DEMO = new URLSearchParams(location.search).has('demo');
+
+/* rich placeholder state for the sandbox + screenshot assets — never touches real storage */
+function demoState(){
+  const s = defaults();
+  const day = 864e5, now = Date.now();
+  const mk = (name, icon, hex, goal, slotSize) => ({id:uid(), name, icon, pal:'gentlemist', customHex:hex, shape:'cube', goal, slotSize});
+  const cols = [
+    mk('Move','dumbbell','#7C93A5',3,2), mk('Read','read','#DD7C54',5,1),
+    mk('Water','droplet','#DFC289',7,1), mk('Rest','moon','#7E9B95',3,1), mk('Create','palette','#C98D7E',4,1),
+  ];
+  s.colors = cols;
+  s.buckets = cols.map(c=>({id:uid(), colorId:c.id, name:c.name, notes:'', chips: c.name==='Water'?{target:8,countsAt:8}:null}));
+  s.settings.userName = 'Sam'; s.settings.blockPal = 'brand'; s.onboarded = true;
+  // this week, mid-flight: start 3 days ago, ~half the blocks banked with spread timestamps
+  s.week = {start:new Date(now-3*day).toISOString(), blocks:[], chips:{}};
+  cols.forEach((c,ci)=>{
+    const doneN = [2,3,4,1,2][ci];
+    for(let i=0;i<c.goal;i++){
+      const done = i < doneN;
+      s.week.blocks.push({id:uid(), colorId:c.id, status:done?'dropped':'tray', via:done?'drag':null,
+        ts:done ? new Date(now - (i%3)*day - 3600e3*(2+i)).toISOString() : null});
+    }
+  });
+  // today: two planned, one already banked
+  const tray = s.week.blocks.filter(b=>b.status==='tray');
+  const banked = s.week.blocks.find(b=>b.status==='dropped');
+  s.day = {date:dayKey(), maxSlots:8, celebrated:false, items:[
+    {id:uid(), blockId:tray[0].id, colorId:tray[0].colorId, done:false, day:'today'},
+    {id:uid(), blockId:tray[1].id, colorId:tray[1].colorId, done:false, day:'today'},
+    {id:uid(), blockId:banked.id, colorId:banked.colorId, done:true, day:'today'},
+  ]};
+  // three finished weeks of history
+  s.history = [1,2,3].map(w=>({
+    start:new Date(now-(3+7*w)*day).toISOString(), end:new Date(now-(3+7*(w-1))*day).toISOString(),
+    perColor: cols.map((c,ci)=>({colorId:c.id, name:c.name, pal:c.pal, customHex:c.customHex, icon:c.icon, goal:c.goal,
+      done: Math.max(0, c.goal - ((w+ci)%3)), partial: (w+ci)%3===1 ? 1 : 0})),
+  }));
+  return s;
+}
+
 function defaults(){
   return {
     version:1, onboarded:false,
@@ -367,8 +408,9 @@ function defaults(){
     day:{date:null, mode:'grid', startMin:480, endMin:1320, slotMin:30, maxSlots:8, items:[], icalUrl:'', ical:[]}, // Day Builder: temporary plan, never reported
   };
 }
-function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+function save(){ if(DEMO) return; try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
 function load(){
+  if(DEMO){ S = demoState(); return; } // sandbox: seeded, in-memory, resets on refresh
   try{ const raw = localStorage.getItem(KEY); if(raw){ S = Object.assign(defaults(), JSON.parse(raw));
     (S.colors||[]).forEach(c=>{ if(PAL_MIGRATE[c.pal]) c.pal = PAL_MIGRATE[c.pal]; c.shape='cube'; if(!c.slotSize) c.slotSize=1; });
     S.day = Object.assign(defaults().day, S.day||{}); return; } }catch(e){}
@@ -608,7 +650,7 @@ const OB = {
         <div class="ob-count" style="color:${inkFor(p.fill)};opacity:.65">bucket ${i+1} of ${d.colors.length}</div>
         <h2 class="ob-title">Set up ${esc(c.name)}</h2>
         <div class="bucket-card" data-c="${c.id}" style="border-color:${p.edge}">
-          <div class="bc-head"><button class="swatch" data-f="look" style="background:${p.fill};border-color:${p.edge};--swk:${inkFor(p.fill)}" title="Change look">${ic(c.icon)}</button>
+          <div class="bc-head"><button class="swatch" data-f="look" style="background:${p.fill};border-color:${p.edge};--swk:${iconInkFor(c, p.fill)}" title="Change look">${ic(c.icon)}</button>
             <input type="text" data-f="bname" value="${esc(c.name)}" aria-label="Bucket name" style="font-weight:700;font-size:17px">
           </div>
           <div class="bc-label">Blocks per week — the goal</div>
@@ -644,9 +686,10 @@ const OB = {
       b.innerHTML = `
         <h2 class="ob-title">Does the week fit?</h2>
         <p class="ob-sub">Your goals, in day-slots — against what one of your days can hold.</p>
-        <div class="paper-list">${d.colors.map(c=>{ const p = palFor(c); return `
-          <div class="recap-row" style="background:${p.fill}">
-            <span class="swatch" style="background:${p.light};border:none;width:32px;height:32px;border-radius:10px;--swk:${inkFor(p.light)}">${ic(c.icon)}</span>
+        <div class="paper-list" id="recapList">${d.colors.map(c=>{ const p = palFor(c); return `
+          <div class="recap-row" data-ord="${c.id}" style="background:${p.fill}">
+            <span class="drag-h" style="color:rgba(51,65,77,.5)" aria-label="Drag to reorder">⠿</span>
+            <span class="swatch" style="background:${p.light};border:none;width:32px;height:32px;border-radius:10px;--swk:${iconInkFor(c, p.light)}">${ic(c.icon)}</span>
             <strong style="flex:1;color:#33414D">${esc(c.name)}</strong>
             <span class="mono" style="font-size:12.5px;color:rgba(51,65,77,.65)">${c.goal}×/wk · ${c.slots||1} slot${(c.slots||1)>1?'s':''} = ${c.goal*(c.slots||1)}</span>
           </div>`; }).join('')}</div>
@@ -661,6 +704,19 @@ const OB = {
           <div class="fit-verdict">${fits ? '✓ It fits — with '+(capacity-goalSlots)+' slots of air.' : '✕ Over by '+(goalSlots-capacity)+' — shrink a goal or give days more room.'}</div>
         </div>`;
       $('#rcSlider').oninput = e=>{ d.maxSlots = +e.target.value; this.render(); };
+      $$('#recapList .recap-row').forEach(row=>{
+        const c = d.colors.find(x=>x.id===row.dataset.ord);
+        row.onclick = e=>{
+          if(e.target.closest('.drag-h')) return;
+          openBucketEditor(c, {draft:true, draftColors:d.colors, onChange:()=>this.render()});
+        };
+      });
+      enableReorder($('#recapList'), ids=>{
+        d.colors.sort((a,b)=>ids.indexOf(a.id)-ids.indexOf(b.id));
+        if(d.palKey && d.palKey!=='custom') applyBlockPalette(d.palKey, d.colors, d.customPal); // colors follow the new order
+        else if(d.customPal && d.customPal.length===6) applyBlockPalette('custom', d.colors, d.customPal);
+        this.render();
+      });
     }
 
     if(key==='voice'){
@@ -715,6 +771,112 @@ const OB = {
   },
   back(){ if(this.step===0){ this.paint(null); show('#screen-splash'); return; } this.step--; this.render(); }
 };
+
+/* ── one modal edits everything about a bucket (settings rows + recap rows tap into this) ── */
+function openBucketEditor(c, opts={}){
+  const isDraft = !!opts.draft;
+  const bk = opts.bucket || null;                       // live-mode bucket (notes + chips live here)
+  const chipsHost = isDraft ? c : bk;                   // where .chips lives
+  const slotKey = isDraft ? 'slots' : 'slotSize';
+  const onChange = opts.onChange || (()=>{});
+  const commit = ()=>{ if(!isDraft) save(); onChange(); };
+  const render = ()=>{
+    const p = palFor(c);
+    const goal = isDraft ? c.goal : (S.nextGoals[c.id] ?? c.goal);
+    const slots = c[slotKey]||1;
+    Sheet.open(`
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+        <button class="swatch" id="beLook" style="width:46px;height:46px;background:${p.fill};border-color:${p.edge};--swk:${iconInkFor(c,p.fill)}">${ic(c.icon)}</button>
+        <input type="text" id="beName" value="${esc(c.name)}" aria-label="Bucket name"
+          style="flex:1;min-width:0;border:none;background:var(--inset);border-radius:12px;padding:12px 14px;font:inherit;font-weight:700;font-size:17px;color:var(--ink)">
+      </div>
+      <div class="bc-label">Blocks per week — the goal${isDraft?'':' · applies when you restack'}</div>
+      <div class="stepper"><button id="beG-">−</button><span class="val" id="beGV">${goal}</span><button id="beG+">＋</button></div>
+      <div class="bc-label">Brick size — day slots one takes</div>
+      <div class="stepper"><button id="beS-">−</button><span class="val" id="beSV">${slots} slot${slots>1?'s':''}</span><button id="beS+">＋</button></div>
+      <div class="bc-label">Icon color on the brick</div>
+      <div class="seg" id="beInk">
+        ${[['auto','Auto'],['ink','Ink'],['paper','Paper']].map(([k,l])=>`<button data-k="${k}" class="${(c.iconInk||'auto')===k?'on':''}">${l}</button>`).join('')}
+      </div>
+      ${chipsHost ? `<div class="chips-toggle" style="margin-top:14px">
+        <label class="switch"><input type="checkbox" id="beChips" ${chipsHost.chips?'checked':''}><span class="knob"></span></label>
+        <span>Count in <strong>chips</strong> (several small reps = one block)</span>
+      </div>
+      <div id="beChipCfg">${chipConfigHTML(chipsHost.chips)}</div>` : ''}
+      <div class="bc-label">Notes</div>
+      <textarea id="beNotes" placeholder="e.g. 3× = 2 swim + 1 yoga" style="width:100%;border:none;background:var(--inset);border-radius:12px;padding:11px 13px;font:inherit;font-size:14.5px;color:var(--ink);min-height:64px">${esc((isDraft?c.notes:bk&&bk.notes)||'')}</textarea>
+      <div class="sheet-actions" style="margin-top:16px">
+        <button class="btn-danger" id="beDelete" style="flex:none;padding:11px 16px">Remove</button>
+        <button class="btn btn-primary" id="beDone" style="flex:1">Done</button>
+      </div>`);
+    $('#beLook').onclick = ()=>openColorPicker(c, ()=>{ commit(); render(); });
+    $('#beName').onchange = e=>{
+      const nm = e.target.value.trim(); if(!nm) return;
+      c.name = nm; if(isDraft) c.bucketName = nm; if(bk) bk.name = nm;
+      commit();
+    };
+    $('#beG-').onclick = ()=>{ if(isDraft){ c.goal = clamp(c.goal-1,1,14); } else { S.nextGoals[c.id] = clamp((S.nextGoals[c.id]??c.goal)-1,1,14); } commit(); $('#beGV').textContent = isDraft?c.goal:S.nextGoals[c.id]; };
+    $('#beG+').onclick = ()=>{ if(isDraft){ c.goal = clamp(c.goal+1,1,14); } else { S.nextGoals[c.id] = clamp((S.nextGoals[c.id]??c.goal)+1,1,14); } commit(); $('#beGV').textContent = isDraft?c.goal:S.nextGoals[c.id]; };
+    $('#beS-').onclick = ()=>{ c[slotKey] = Math.max(1,(c[slotKey]||1)-1); commit(); const s=c[slotKey]; $('#beSV').textContent = `${s} slot${s>1?'s':''}`; };
+    $('#beS+').onclick = ()=>{ c[slotKey] = Math.min(8,(c[slotKey]||1)+1); commit(); const s=c[slotKey]; $('#beSV').textContent = `${s} slot${s>1?'s':''}`; };
+    $$('#beInk button').forEach(el=>el.onclick = ()=>{
+      c.iconInk = el.dataset.k==='auto' ? null : el.dataset.k;
+      if(c.iconInk===null) delete c.iconInk;
+      commit(); render();
+    });
+    if(chipsHost){
+      $('#beChips').onchange = e=>{ chipsHost.chips = e.target.checked?{target:8,countsAt:8}:null; commit(); render(); };
+      bindChipConfig($('#sheet'), ()=>chipsHost.chips, ()=>{ commit(); render(); });
+    }
+    $('#beNotes').onchange = e=>{ if(isDraft) c.notes = e.target.value; if(bk) bk.notes = e.target.value; commit(); };
+    $('#beDelete').onclick = ()=>{
+      if(!confirm(`Remove the ${c.name} bucket${isDraft?'':' and its blocks'}?`)) return;
+      if(isDraft){ opts.draftColors.splice(opts.draftColors.indexOf(c),1); }
+      else {
+        S.colors = S.colors.filter(x=>x.id!==c.id);
+        S.buckets = S.buckets.filter(b=>b.colorId!==c.id);
+        S.week.blocks = S.week.blocks.filter(b=>b.colorId!==c.id);
+      }
+      commit(); Sheet.close();
+    };
+    $('#beDone').onclick = ()=>Sheet.close();
+  };
+  render();
+}
+
+/* pointer-based drag-to-reorder for card lists (works on touch) */
+function enableReorder(list, onCommit){
+  if(!list) return;
+  list.querySelectorAll('.drag-h').forEach(h=>{
+    h.style.touchAction = 'none';
+    let item = null, startY = 0;
+    h.addEventListener('pointerdown', e=>{
+      item = h.closest('[data-ord]'); if(!item) return;
+      e.preventDefault(); e.stopPropagation();
+      try{ h.setPointerCapture(e.pointerId); }catch(_){}
+      startY = e.clientY; item.classList.add('dragging');
+    });
+    h.addEventListener('pointermove', e=>{
+      if(!item) return;
+      item.style.transform = `translateY(${e.clientY-startY}px)`;
+      const sibs = [...list.querySelectorAll('[data-ord]')].filter(x=>x!==item);
+      for(const s of sibs){
+        const r = s.getBoundingClientRect(), mid = r.top + r.height/2;
+        const before = !!(item.compareDocumentPosition(s) & Node.DOCUMENT_POSITION_PRECEDING);
+        if(before && e.clientY < mid){ list.insertBefore(item, s); startY = e.clientY; item.style.transform=''; break; }
+        if(!before && e.clientY > mid){ list.insertBefore(item, s.nextSibling); startY = e.clientY; item.style.transform=''; break; }
+      }
+    });
+    const end = ()=>{
+      if(!item) return;
+      item.classList.remove('dragging'); item.style.transform = '';
+      onCommit([...list.querySelectorAll('[data-ord]')].map(x=>x.dataset.ord));
+      item = null;
+    };
+    h.addEventListener('pointerup', end);
+    h.addEventListener('pointercancel', end);
+  });
+}
 
 /* ── appearance picker: palette + custom hex + 100-icon library ── */
 function openColorPicker(c, onDone){
@@ -780,6 +942,12 @@ function drawShapePreview(cv, shape, pal){
 function inkFor(fill){ // icon/text color on a block face — leans paper on mid-tones (founder call)
   const n = parseInt(fill.slice(1),16), r=n>>16, g=(n>>8)&255, b=n&255;
   return (0.299*r+0.587*g+0.114*b) > 165 ? '#33414D' : '#FDFBF7';
+}
+/* per-bucket icon ink override: auto (by luminance) | ink | paper */
+function iconInkFor(c, fill){
+  if(c && c.iconInk==='ink') return '#33414D';
+  if(c && c.iconInk==='paper') return '#FDFBF7';
+  return inkFor(fill);
 }
 function drawBlockShape(x, cx, cy, size, shape, pal, angle, iconImg=null, label=null){
   x.save(); x.translate(cx, cy); x.rotate(angle);
@@ -871,7 +1039,7 @@ const Renderer3D = {
     });
     const mesh = new THREE.Mesh(geo, mat);
     // icon decal on front + back faces
-    const ink = inkFor(p.fill);
+    const ink = iconInkFor(c, p.fill);
     const img = iconImage(c.icon, ink);
     const tex = new THREE.Texture(img);
     tex.colorSpace = THREE.SRGBColorSpace;
@@ -1106,6 +1274,14 @@ const Floor = {
 
     const loop = ()=>{
       if(!this.paused){
+        // chips can never live above the divider — flung up, they ghost through
+        // the pile and the shelf and fall back home to the today zone
+        for(const body of this.bodies.values()){
+          if(!body.isChip || this.dragging === body) continue;
+          const above = body.position.y < this.planY();
+          const want = above ? 0 : -1;
+          if(body.collisionFilter.mask !== want){ body.collisionFilter.mask = want; if(!above) Matter.Sleeping.set(body, false); }
+        }
         Matter.Engine.update(this.engine, 1000/60);
         // backstop: any chip queued to pop that somehow lingered despawns quietly
         const now = performance.now();
@@ -1199,6 +1375,11 @@ const Floor = {
     this.bodies.clear();
     for(const block of trayBlocks()){
       const body = this.bodyFor(block); if(!body) continue;
+      // planned blocks respawn in the today zone, not the week pile
+      if(DayB.isPlanned(block.id)){
+        Matter.Body.setPosition(body, {x:40+Math.random()*(this.W-80), y:this.planY()+70+Math.random()*80});
+        Matter.Body.setVelocity(body, {x:0, y:0});
+      }
       this.bodies.set(block.id, body);
       Matter.World.add(this.engine.world, body);
     }
@@ -1221,7 +1402,7 @@ const Floor = {
           <ellipse cx="50" cy="32" rx="30" ry="8" fill="${p.edge}"/>
           <ellipse cx="50" cy="32" rx="24.5" ry="6" fill="rgba(43,42,58,.42)"/>
           <path d="M31.5 44 Q29.5 64 32.5 82" fill="none" stroke="${p.light}" stroke-width="5" stroke-linecap="round" opacity="0.75"/>
-          <g transform="translate(38 48) scale(1.05)" fill="none" stroke="${inkFor(p.fill)}" stroke-opacity="0.6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${ICONS[c.icon]||ICONS.star}</g>
+          <g transform="translate(38 48) scale(1.05)" fill="none" stroke="${iconInkFor(c, p.fill)}" stroke-opacity="0.6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${ICONS[c.icon]||ICONS.star}</g>
         </svg>
         <div style="font-size:12px;font-weight:700;color:var(--ink);line-height:1.15;padding:0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(bk.name)}</div>
         <div class="mono" style="font-size:11px;color:var(--muted)">${done}/${c.goal}${(n=>n?` <span style="color:var(--good);font-weight:700">+${n}</span>`:'')(S.week.blocks.filter(b=>b.colorId===c.id && b.status==='dropped' && b.ts && b.ts.slice(0,10)===dayKey()).length * ((c.slotSize||1)))}</div>
@@ -1287,7 +1468,7 @@ const Floor = {
       if(body){ Matter.World.remove(this.engine.world, body); this.bodies.delete(block.id); }
       const c = S.colors.find(x=>x.id===colorId);
       this.flights.push({from, to:{x:r.x+r.w/2, y:r.y+30}, t0:performance.now()+k*110, dur:520,
-        pal:palFor(c), shape:c.shape, icon:c.icon, label:c.name, size:this.sizeFor(colorId)*0.9,
+        pal:palFor(c), shape:c.shape, icon:c.icon, ink:iconInkFor(c, palFor(c).fill), label:c.name, size:this.sizeFor(colorId)*0.9,
         done:()=>{
           block.status='dropped'; block.via=via; block.ts=new Date().toISOString();
           DayB.markDone(block.id);
@@ -1334,7 +1515,7 @@ const Floor = {
     const from = {x:body.position.x, y:body.position.y};
     Matter.World.remove(this.engine.world, body); this.bodies.delete(block.id);
     this.flights.push({from, to:{x:r.x+r.w/2, y:r.y+30}, t0:performance.now(), dur:430,
-      pal:palFor(c), shape:c.shape, icon:c.icon, size:this.sizeFor(c.id)*0.9,
+      pal:palFor(c), shape:c.shape, icon:c.icon, ink:iconInkFor(c, palFor(c).fill), size:this.sizeFor(c.id)*0.9,
       done:()=>{
         block.status='dropped'; block.via='sweep'; block.ts=new Date().toISOString();
         DayB.markDone(block.id); save();
@@ -1358,7 +1539,8 @@ const Floor = {
 
   /* ── chips-mode blocks are physical too: shatter on plan, regroup on the way back ── */
   shatterToChips(block, body, bucket){
-    const n = bucket.chips.target;
+    const banked = (S.week.chips[bucket.id]||{})[dayKey()]||0;
+    const n = clamp(bucket.chips.target - banked, 1, bucket.chips.target); // only what's left today
     const px = clamp(body.position.x, 40, this.W-40);
     const py = clamp(Math.max(body.position.y, this.planY()+70), this.planY()+60, this.floorY()-40);
     Matter.World.remove(this.engine.world, body); this.bodies.delete(block.id);
@@ -1502,14 +1684,14 @@ const Floor = {
     const now = performance.now();
     this.flights = this.flights.filter(fl=>{
       if(now < fl.t0){
-        drawBlockShape(f, fl.from.x, fl.from.y, fl.size, fl.shape, fl.pal, 0, iconImage(fl.icon, inkFor(fl.pal.fill)));
+        drawBlockShape(f, fl.from.x, fl.from.y, fl.size, fl.shape, fl.pal, 0, iconImage(fl.icon, fl.ink||inkFor(fl.pal.fill)));
         return true;
       }
       const t = clamp((now-fl.t0)/fl.dur, 0, 1);
       const e = 1-Math.pow(1-t,3);
       const px = fl.from.x+(fl.to.x-fl.from.x)*e;
       const py = fl.from.y+(fl.to.y-fl.from.y)*e - Math.sin(Math.PI*t)*70;
-      drawBlockShape(f, px, py, fl.size*(1-0.45*t), fl.shape, fl.pal, t*1.2, iconImage(fl.icon, inkFor(fl.pal.fill)));
+      drawBlockShape(f, px, py, fl.size*(1-0.45*t), fl.shape, fl.pal, t*1.2, iconImage(fl.icon, fl.ink||inkFor(fl.pal.fill)));
       if(t>=1){ fl.done && fl.done(); return false; }
       return true;
     });
@@ -1537,7 +1719,7 @@ const Floor = {
     const doneN = S.week.blocks.filter(b=>b.status==='dropped').length;
     $('#floorHint').innerHTML = S.colors.length
       ? `<div class="day-bar-wrap"><span class="day-bar-label">Week</span><div class="day-bar">${segs}</div><span class="day-bar-label">${doneN}/${S.week.blocks.length}</span></div>
-         <div class="floor-whisper">Throw the blocks around — it's allowed. Drag one onto its bucket when it's done.</div>`
+         <div class="floor-whisper">Drop a block in today. Drag one to its bucket to claim it done. Just throw some around — it's allowed.</div>`
       : esc(V().empty);
     // sweep fab: end of week only, dismissable
     const fab = $('#btnRoundup');
@@ -1662,12 +1844,15 @@ const Receipts = {
         ${dots?`<div class="wk-dots">${dots}</div>`:'<div class="muted" style="font-size:12px;margin-top:6px">nothing claimed yet</div>'}
       </div>`;
     }).join('');
+    const avgLabel = archived.length
+      ? `avg blocks / week<br>(last ${archived.length===1?'week':archived.length+' weeks'})`
+      : `blocks so far<br>(this week)`;
     $('#receiptsBody').innerHTML = `
-      <div class="set-group"><h3>Last ${basis.length===1?'week':basis.length+' weeks'}</h3>
+      <div class="set-group"><h3>How it's going</h3>
         <div class="avg-row">
-          <div class="avg-cell"><div class="n">${avg}</div>${miniBlocks(avg)}<div class="t">avg / week</div></div>
-          <div class="avg-cell"><div class="n">${best}</div>${miniBlocks(best)}<div class="t">best week</div></div>
-          <div class="avg-cell"><div class="n">${weeks.length}</div>${miniBlocks(weeks.length,7)}<div class="t">weeks tracked</div></div>
+          <div class="avg-cell"><div class="n">${avg}</div>${miniBlocks(avg)}<div class="t">${avgLabel}</div></div>
+          <div class="avg-cell"><div class="n">${best}</div>${miniBlocks(best)}<div class="t">best week<br>yet</div></div>
+          <div class="avg-cell"><div class="n">${weeks.length}</div>${miniBlocks(weeks.length,7)}<div class="t">weeks<br>tracked</div></div>
         </div>
       </div>
       <div class="set-group"><h3>Week by week</h3>
@@ -1682,11 +1867,15 @@ const Settings = {
   open(){ show('#screen-settings'); this.render(); },
   colorRow(c){
     const p = palFor(c);
-    return `<div class="color-row" data-c="${c.id}">
-      <button class="swatch" style="background:${p.fill};border-color:${p.edge};--swk:${inkFor(p.fill)}" title="Change look" data-act="pal">${ic(c.icon)}</button>
-      <input type="text" value="${esc(c.name)}" aria-label="Bucket name">
-      <div class="stepper"><button data-act="-">−</button><span class="val">${S.nextGoals[c.id] ?? c.goal}</span><button data-act="+">＋</button></div>
-      <button class="row-x" data-act="x" aria-label="Remove">✕</button>
+    const bk = S.buckets.find(b=>b.colorId===c.id);
+    const goal = S.nextGoals[c.id] ?? c.goal;
+    const meta = [`${goal}×/wk`, (c.slotSize||1)>1?`${c.slotSize} slots`:null, (bk&&bk.chips)?'chips':null].filter(Boolean).join(' · ');
+    return `<div class="color-row cr-tap" data-c="${c.id}" data-ord="${c.id}" role="button">
+      <span class="drag-h" aria-label="Drag to reorder">⠿</span>
+      <span class="swatch" style="background:${p.fill};border-color:${p.edge};--swk:${iconInkFor(c, p.fill)}">${ic(c.icon)}</span>
+      <span class="cr-name">${esc(c.name)}</span>
+      <span class="cr-meta mono">${meta}</span>
+      <span class="cr-chev">›</span>
     </div>`;
   },
   render(){
@@ -1724,25 +1913,7 @@ const Settings = {
       <div class="set-group"><h3>Buckets & goals</h3>
         <div id="setColors">${S.colors.map(c=>this.colorRow(c)).join('')}</div>
         <button class="btn btn-ghost" id="addColor" style="width:100%">＋ Add a bucket</button>
-        <div class="set-note" style="padding:8px 2px">Goal changes apply when you restack. Removing a bucket removes its blocks.</div>
-      </div>
-      <div class="set-group"><h3>Buckets</h3>
-        ${S.buckets.map(bk=>{
-          const c = S.colors.find(x=>x.id===bk.colorId); if(!c) return '';
-          const p = palFor(c);
-          return `<div class="bucket-card" data-b="${bk.id}">
-            <div class="bc-head"><span class="swatch" data-f="pal" role="button" title="Change color & icon" style="background:${p.fill};border-color:${p.edge};cursor:pointer;--swk:${inkFor(p.fill)}">${ic(c.icon)}</span>
-              <input type="text" data-f="bname" value="${esc(bk.name)}"></div>
-            <textarea data-f="notes" placeholder="Notes…">${esc(bk.notes)}</textarea>
-            <div class="bc-label" style="margin-top:10px">Brick size — day slots</div>
-            <div class="stepper"><button data-f="ss-">−</button><span class="val">${c.slotSize||1}</span><button data-f="ss+">＋</button></div>
-            <div class="chips-toggle">
-              <label class="switch"><input type="checkbox" data-f="chips" ${bk.chips?'checked':''}><span class="knob"></span></label>
-              <span>Chips mode (several small reps = one block)</span>
-            </div>
-            ${chipConfigHTML(bk.chips)}
-          </div>`;
-        }).join('')}
+        <div class="set-note" style="padding:8px 2px">Tap a bucket to edit everything about it. Drag ⠿ to reorder — palettes apply their colors in this order. Goal changes land when you restack.</div>
       </div>
       <div class="set-group"><h3>Your data</h3>
         <div class="set-card">
@@ -1784,22 +1955,16 @@ const Settings = {
     $('#setSlotsP').onclick = ()=>{ S.day.maxSlots = Math.min(24,S.day.maxSlots+1); save(); $('#setSlotsV').textContent = S.day.maxSlots; };
     $$('#setColors .color-row').forEach(row=>{
       const c = S.colors.find(x=>x.id===row.dataset.c);
-      row.querySelector('input').onchange = e=>{
-        const nm = e.target.value.trim(); if(!nm) return;
-        c.name = nm;
-        const bk = S.buckets.find(b=>b.colorId===c.id); if(bk) bk.name = nm;
-        save(); this.render(); Floor.syncBuckets();
+      row.onclick = e=>{
+        if(e.target.closest('.drag-h')) return;
+        openBucketEditor(c, {bucket: S.buckets.find(b=>b.colorId===c.id),
+          onChange: ()=>{ this.render(); Floor.syncBuckets(); Floor.rebuild(); Renderer3D.refreshColor(); }});
       };
-      row.querySelector('[data-act="-"]').onclick = ()=>{ S.nextGoals[c.id] = clamp((S.nextGoals[c.id]??c.goal)-1,1,14); save(); this.renderGoalHint(row, c); };
-      row.querySelector('[data-act="+"]').onclick = ()=>{ S.nextGoals[c.id] = clamp((S.nextGoals[c.id]??c.goal)+1,1,14); save(); this.renderGoalHint(row, c); };
-      row.querySelector('[data-act="pal"]').onclick = ()=>openColorPicker(c, ()=>{ save(); this.render(); Floor.syncBuckets(); });
-      row.querySelector('[data-act="x"]').onclick = ()=>{
-        if(!confirm(`Remove the ${c.name} bucket and its blocks?`)) return;
-        S.colors = S.colors.filter(x=>x.id!==c.id);
-        S.buckets = S.buckets.filter(b=>b.colorId!==c.id);
-        S.week.blocks = S.week.blocks.filter(b=>b.colorId!==c.id);
-        save(); this.render(); Floor.rebuild();
-      };
+    });
+    enableReorder($('#setColors'), ids=>{
+      S.colors.sort((a,b)=>ids.indexOf(a.id)-ids.indexOf(b.id));
+      S.buckets.sort((a,b)=>ids.indexOf(a.colorId)-ids.indexOf(b.colorId));
+      save(); this.render(); Floor.syncBuckets();
     });
     $('#addColor').onclick = ()=>{
       if(S.colors.length>=6) return toast('Six buckets max — keep it holdable.');
@@ -1815,17 +1980,6 @@ const Settings = {
       for(let i=0;i<c.goal;i++) S.week.blocks.push({id:uid(), colorId:c.id, status:'tray', via:null, ts:null});
       save(); this.render(); Floor.rebuild();
     };
-    $$('#settingsBody .bucket-card').forEach(card=>{
-      const bk = S.buckets.find(b=>b.id===card.dataset.b); if(!bk) return;
-      card.querySelector('[data-f=bname]').onchange = e=>{ bk.name = e.target.value.trim()||bk.name; save(); Floor.syncBuckets(); };
-      card.querySelector('[data-f=notes]').onchange = e=>{ bk.notes = e.target.value; save(); };
-      card.querySelector('[data-f=chips]').onchange = e=>{ bk.chips = e.target.checked?{target:8,countsAt:8}:null; save(); this.render(); };
-      bindChipConfig(card, ()=>bk.chips, ()=>{ save(); this.render(); });
-      const cc = S.colors.find(x=>x.id===bk.colorId);
-      card.querySelector('[data-f="pal"]')?.addEventListener('click',()=>openColorPicker(cc, ()=>{ save(); this.render(); Floor.syncBuckets(); Floor.rebuild(); }));
-      card.querySelector('[data-f="ss-"]')?.addEventListener('click',()=>{ cc.slotSize = Math.max(1,(cc.slotSize||1)-1); save(); this.render(); });
-      card.querySelector('[data-f="ss+"]')?.addEventListener('click',()=>{ cc.slotSize = Math.min(8,(cc.slotSize||1)+1); save(); this.render(); });
-    });
     $('#expData').onclick = ()=>{
       const blob = new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
@@ -2007,7 +2161,7 @@ function boot(){
   $('#obBack').innerHTML = ic('back');
 
   if(S.onboarded){ show('#screen-floor'); Floor.rebuild(); }
-  Notif.init();
-  if('serviceWorker' in navigator){ try{ navigator.serviceWorker.register('sw.js'); }catch(e){} }
+  if(!DEMO) Notif.init();
+  if(!DEMO && 'serviceWorker' in navigator){ try{ navigator.serviceWorker.register('sw.js'); }catch(e){} }
 }
 document.addEventListener('DOMContentLoaded', boot);
