@@ -865,10 +865,11 @@ const Renderer3D = {
     for(const [id, body] of bodies){
       let m = this.meshes.get(id);
       if(!m){
-        const block = S.week.blocks.find(b=>b.id===id);
-        const c = block && S.colors.find(k=>k.id===block.colorId);
+        const c = body.isChip
+          ? S.colors.find(k=>k.id===body.colorId)
+          : (b0=>b0 && S.colors.find(k=>k.id===b0.colorId))(S.week.blocks.find(b=>b.id===id));
         if(!c) continue;
-        m = this.meshFor(c, Floor.sizeFor(c.id));
+        m = this.meshFor(c, body.isChip ? body.chipSize : Floor.sizeFor(c.id));
         this.meshes.set(id, m); this.scene.add(m);
       }
       m.position.set(body.position.x, -body.position.y, 0);
@@ -949,13 +950,27 @@ const Floor = {
         if(lines.length && Math.random()<0.35) toast(lines[Math.floor(Math.random()*lines.length)], {ms:1400});
         return;
       }
+      // ── chips are their own species: bank one, or carry one up to regroup them all ──
+      if(body.isChip){
+        body.collisionFilter.mask = -1;
+        let chit = this.bucketAt(this.mouse.position.x, this.mouse.position.y);
+        if(chit<0) chit = this.bucketAt(body.position.x, body.position.y);
+        if(chit>=0){
+          const bucket = S.buckets[chit];
+          if(bucket.colorId===body.colorId && bucket.chips){ this.bankChip(body, bucket); return; }
+          toast(V().wrongBucket(S.buckets.find(bk=>bk.colorId===body.colorId)?.name||'its bucket'), {ms:2000});
+          sfx('tick');
+        }
+        if(this.mouse.position.y <= this.planY()){ this.gatherChips(body.chipParent, {x:this.mouse.position.x, y:this.mouse.position.y}); return; }
+        return;
+      }
       let hit = this.bucketAt(this.mouse.position.x, this.mouse.position.y);
       if(hit<0) hit = this.bucketAt(body.position.x, body.position.y);
       if(hit>=0){
         const bucket = S.buckets[hit];
         const block = S.week.blocks.find(b=>b.id===body.blockId);
         if(block && bucket.colorId===block.colorId){ this.capture(block, body, bucket, 'drag'); return; }
-        const owner = S.buckets.find(bk=>bk.colorId===block.colorId);
+        const owner = block && S.buckets.find(bk=>bk.colorId===block.colorId);
         toast(V().wrongBucket(owner?owner.name:'another bucket'), {ms:2200});
         sfx('tick');
       }
@@ -981,7 +996,11 @@ const Floor = {
               toast(`${target==='tomorrow'?'Tomorrow':'Today'}'s full — ${S.day.maxSlots} slots. Protect the plan.`, {ms:2600});
               Matter.Body.setPosition(body, {x:clamp(body.position.x,30,this.W-30), y:this.planY()-120});
               Matter.Body.setVelocity(body,{x:0,y:0});
-            } else { DayB.setPlanned(block, true); sfx('slide'); buzz(8); }
+            } else {
+              DayB.setPlanned(block, true); sfx('slide'); buzz(8);
+              const bk = S.buckets.find(k=>k.colorId===block.colorId);
+              if(bk && bk.chips){ this.shatterToChips(block, body, bk); return; }
+            }
           }
         } else if(py <= this.planY() && DayB.isPlanned(block.id)){
           DayB.setPlanned(block, false); sfx('tap');
@@ -1249,6 +1268,7 @@ const Floor = {
   /* ── week sweep, on the board ── */
   enterSweep(){
     S.lastRoundup = new Date().toISOString(); save();
+    this.rejoinAllChips(); // loose chips regroup before the sweep
     this.sweepMode = true;
     $('#btnRoundup').hidden = true;
     const pop = $('#sweepPop'); pop.hidden = false;
@@ -1291,6 +1311,85 @@ const Floor = {
     S.settings.sweepDismissed = null;
     spawnWeek(); this.exitSweep(); this.rebuild();
     sfx('fanfare'); toast(V().restacked, {ms:3000});
+  },
+
+  /* ── chips-mode blocks are physical too: shatter on plan, regroup on the way back ── */
+  shatterToChips(block, body, bucket){
+    const n = bucket.chips.target;
+    const px = clamp(body.position.x, 40, this.W-40);
+    const py = clamp(Math.max(body.position.y, this.planY()+70), this.planY()+60, this.floorY()-40);
+    Matter.World.remove(this.engine.world, body); this.bodies.delete(block.id);
+    const s = this.sizeFor(block.colorId)*0.5;
+    for(let i=0;i<n;i++){
+      const chip = Matter.Bodies.rectangle(px+(Math.random()-.5)*8, py+(Math.random()-.5)*8, s, s,
+        {restitution:0.52, friction:0.34, frictionAir:0.008, density:0.0022, chamfer:{radius:s*0.22}});
+      chip.isChip = true; chip.chipParent = block.id; chip.colorId = block.colorId;
+      chip.blockId = 'chip:'+block.id+':'+i; chip.chipSize = s;
+      const a = (i/n)*Math.PI*2 + (Math.random()-.5)*0.6;
+      Matter.Body.setVelocity(chip, {x:Math.cos(a)*(5+Math.random()*5), y:Math.abs(Math.sin(a))*-(4+Math.random()*4)});
+      Matter.Body.setAngularVelocity(chip, (Math.random()-.5)*0.7);
+      this.bodies.set(chip.blockId, chip);
+      Matter.World.add(this.engine.world, chip);
+      Renderer3D.tumble(chip.blockId, 1.5);
+    }
+    this.burst(px, py, palFor(S.colors.find(c=>c.id===block.colorId)||{}));
+    sfx('impact'); buzz(18);
+  },
+  chipsOf(parentId){ return [...this.bodies.values()].filter(b=>b.isChip && b.chipParent===parentId); },
+  gatherChips(parentId, at){
+    const chips = this.chipsOf(parentId);
+    const block = S.week.blocks.find(b=>b.id===parentId);
+    const target = {x: clamp(at.x, 40, this.W-40), y: Math.min(at.y, this.planY()-70)};
+    chips.forEach(ch=>{
+      ch.collisionFilter.mask = 0; // ghost through the shelf on the way home
+      const d = {x:target.x-ch.position.x, y:target.y-ch.position.y};
+      const dist = Math.hypot(d.x,d.y)||1;
+      const v = Math.min(dist*0.11, 30);
+      Matter.Body.setVelocity(ch, {x:d.x/dist*v, y:d.y/dist*v});
+      Matter.Body.setAngularVelocity(ch, (Math.random()-.5)*0.5);
+    });
+    sfx('slide');
+    setTimeout(()=>{
+      this.chipsOf(parentId).forEach(ch=>{ Matter.World.remove(this.engine.world, ch); this.bodies.delete(ch.blockId); });
+      if(block && block.status!=='dropped'){
+        const nb = this.bodyFor(block);
+        if(nb){
+          Matter.Body.setPosition(nb, target); Matter.Body.setVelocity(nb, {x:0, y:-2.5});
+          this.bodies.set(block.id, nb); Matter.World.add(this.engine.world, nb);
+          Renderer3D.tumble(block.id, 1.3);
+        }
+        DayB.setPlanned(block, false);
+      }
+      sfx('drop'); buzz(12);
+      this.updateHeader();
+    }, 400);
+  },
+  rejoinAllChips(){
+    const parents = [...new Set([...this.bodies.values()].filter(b=>b.isChip).map(b=>b.chipParent))];
+    parents.forEach(p=>this.gatherChips(p, {x:this.W/2, y:this.planY()-120}));
+  },
+  bankChip(body, bucket){
+    Matter.World.remove(this.engine.world, body); this.bodies.delete(body.blockId);
+    S.week.chips[bucket.id] = S.week.chips[bucket.id]||{};
+    const today = S.week.chips[bucket.id][dayKey()]||0;
+    if(today >= bucket.chips.target){ sfx('tick'); this.updateHeader(); return; }
+    S.week.chips[bucket.id][dayKey()] = today+1; save();
+    const i = S.buckets.indexOf(bucket);
+    const r = this.bucketRects[i];
+    const pal = palFor(S.colors.find(c=>c.id===bucket.colorId)||{});
+    sfx('tick'); buzz(8);
+    if(today+1 === bucket.chips.countsAt){
+      // enough chips today → the shattered block is earned
+      const parent = S.week.blocks.find(b=>b.id===body.chipParent && b.status!=='dropped')
+        || S.week.blocks.find(b=>b.colorId===bucket.colorId && b.status!=='dropped');
+      if(parent){
+        parent.status='dropped'; parent.via='chips'; parent.ts=new Date().toISOString();
+        DayB.markDone(parent.id); save();
+        if(r) this.burst(r.x+r.w/2, r.y+18, pal, true);
+        sfx('drop'); buzz(18);
+      }
+    } else if(r) this.burst(r.x+r.w/2, r.y+22, pal);
+    this.syncBuckets(); this.updateHeader();
   },
 
   /* today's whole plan banked → confetti rain along the divider + fanfare */
