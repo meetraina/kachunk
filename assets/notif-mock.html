@@ -1,0 +1,67 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+@font-face{font-family:"Bricolage Grotesque";font-weight:800;src:url("../node_modules/@fontsource/bricolage-grotesque/files/bricolage-grotesque-latin-800-normal.woff2") format("woff2")}
+@font-face{font-family:"Inclusive Sans";font-weight:400;src:url("../node_modules/@fontsource/inclusive-sans/files/inclusive-sans-latin-400-normal.woff2") format("woff2")}
+@font-face{font-family:"Inclusive Sans";font-weight:600;src:url("../node_modules/@fontsource/inclusive-sans/files/inclusive-sans-latin-600-normal.woff2") format("woff2")}
+body{margin:0;background:#F8F6F2;font-family:"Inclusive Sans",sans-serif;padding:40px;width:1020px;color:#33414D}
+h1{font-family:"Bricolage Grotesque";font-size:30px;margin:0 0 6px}
+.sub{color:#8B949B;font-size:14px;margin-bottom:26px}
+.row{display:flex;gap:26px}
+.phone{width:470px;border-radius:34px;padding:26px 20px 30px;position:relative;overflow:hidden}
+.ios{background:linear-gradient(160deg,#5a6a76,#2e3c46)}
+.android{background:linear-gradient(160deg,#e8e2d6,#cfc8b8)}
+.ptitle{color:rgba(255,255,255,.85);font-size:12px;letter-spacing:.12em;text-transform:uppercase;text-align:center;margin-bottom:14px}
+.android .ptitle{color:rgba(51,65,77,.65)}
+.time{color:#fff;font-family:"Bricolage Grotesque";font-weight:800;font-size:64px;text-align:center;margin:6px 0 2px}
+.date{color:rgba(255,255,255,.8);font-size:15px;text-align:center;margin-bottom:22px}
+.notif{background:rgba(250,248,244,.94);border-radius:22px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;box-shadow:0 10px 30px rgba(0,0,0,.22);margin-bottom:10px}
+.appicon{width:40px;height:40px;border-radius:10px;flex:none;background:#F8F6F2;display:flex;align-items:center;justify-content:center}
+.appicon .k{width:30px;height:30px;border-radius:8px;background:#7E9B95;transform:rotate(-8deg);display:flex;align-items:center;justify-content:center;font-family:"Bricolage Grotesque";font-weight:800;font-size:16px;color:#FDFBF7}
+.k span{color:#DD7C54}
+.nbody{flex:1;min-width:0}
+.nhead{display:flex;align-items:baseline;gap:8px}
+.nname{font-weight:600;font-size:13.5px}
+.nwhen{margin-left:auto;color:#8B949B;font-size:11.5px}
+.ntitle{font-weight:600;font-size:14.5px;margin-top:1px}
+.ntext{font-size:13.5px;color:#5A6670;line-height:1.4}
+.lbl{font-size:12px;color:#8B949B;margin:14px 0 6px;font-weight:600}
+.android .notif{border-radius:18px;background:#FDFCFA}
+.note{font-size:13px;color:#5A6670;max-width:900px;line-height:1.6;margin-top:24px}
+</style></head><body>
+<h1>The one notification — the Roundup</h1>
+<div class="sub">Daily, at the time they pick. Copy follows the chosen voice. Nothing else ever pings.</div>
+<div class="row">
+  <div class="phone ios">
+    <div class="ptitle">iOS · lock screen</div>
+    <div class="time">8:30</div><div class="date">Friday, July 17</div>
+    <div class="notif">
+      <div class="appicon"><div class="k">k<span>.</span></div></div>
+      <div class="nbody"><div class="nhead"><span class="nname">Kachunk</span><span class="nwhen">now</span></div>
+      <div class="ntitle">Roundup time.</div>
+      <div class="ntext">Your blocks are loitering. Come deal with them. (Zesty)</div></div>
+    </div>
+    <div class="notif" style="opacity:.85">
+      <div class="appicon"><div class="k">k<span>.</span></div></div>
+      <div class="nbody"><div class="nhead"><span class="nname">Kachunk</span><span class="nwhen">Sun</span></div>
+      <div class="ntitle">Week sweep.</div>
+      <div class="ntext">Tap what happened, restack the rest. Two minutes. (end of week only)</div></div>
+    </div>
+  </div>
+  <div class="phone android">
+    <div class="ptitle">Android · banner</div>
+    <div style="height:82px"></div>
+    <div class="notif">
+      <div class="appicon"><div class="k">k<span>.</span></div></div>
+      <div class="nbody"><div class="nhead"><span class="nname">Kachunk · Roundup</span><span class="nwhen">8:30 PM</span></div>
+      <div class="ntitle">Block recorded? Prove it.</div>
+      <div class="ntext">Drag today's wins into their buckets — 30 seconds, tops.</div></div>
+    </div>
+    <div class="notif" style="opacity:.85">
+      <div class="appicon"><div class="k">k<span>.</span></div></div>
+      <div class="nbody"><div class="nhead"><span class="nname">Kachunk · Roundup</span><span class="nwhen">8:30 PM</span></div>
+      <div class="ntitle">Roundup time.</div>
+      <div class="ntext">Review your blocks. 2 unplaced this week. (Plain voice)</div></div>
+    </div>
+  </div>
+</div>
+<div class="note"><strong>Honest limits:</strong> as a web app, the Roundup fires reliably while Kachunk is open or installed to the home screen (Android full support; iOS requires Add-to-Home-Screen and stays best-effort). The store wrapper (post-clearance) uses native local notifications — bulletproof on both platforms. There is no notification #2 anywhere in the product.</div>
+</body></html>
