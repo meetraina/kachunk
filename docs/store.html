@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachunk — Store Metadata Plan</title>
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="stylesheet" href="doc.css">
+<style>.copyblock{background:var(--inset);border-radius:12px;padding:12px 14px;font-size:14px;white-space:pre-wrap;font-family:"Inclusive Sans",sans-serif;color:var(--text);} .charcount{font-family:"Figtree",sans-serif;font-variant-numeric:tabular-nums;font-size:10.5px;color:var(--muted);text-align:right;margin-top:4px;}</style>
+</head>
+<body>
+<header class="dochead">
+  <span class="logo">Kachunk<span class="dot">.</span> <span class="muted" style="font-weight:400;font-size:14px">/ store metadata</span></span>
+  <nav class="docnav">
+    <a href="index.html">Command Center</a><a href="brand.html">Brand</a><a href="positioning.html">Positioning</a><a href="launch.html">Launch</a><a class="on" href="store.html">Store</a><a href="purchase-list.html">Purchase List</a><a href="assets.html">Asset Pack</a>
+  </nav>
+</header>
+<div class="wrap">
+  <div class="kicker">App-store metadata plan · v1</div>
+  <h1>The listing, written before the wrapper.</h1>
+  <p class="lede">Path to stores: the PWA ships today; <strong>PWABuilder → Google Play (TWA)</strong> and an iOS shell (Capacitor) follow after name clearance. Both stores get the same story: buckets not calendars, pay once, zero shame. Price: <strong>$5.99 one-time</strong>. Web app stays free as the funnel.</p>
+
+  <h2>Apple App Store</h2>
+  <table>
+    <tr><th>Field</th><th>Content</th><th>Limit</th></tr>
+    <tr><td><strong>Name</strong></td><td>Kachunk — Visual Weekly Planner</td><td class="mono">30 · ✓ 30</td></tr>
+    <tr><td><strong>Subtitle</strong></td><td>Habit buckets for ADHD brains</td><td class="mono">30 · ✓ 29</td></tr>
+    <tr><td><strong>Keywords</strong> (hidden, 100)</td><td class="mono">habit,tracker,adhd,visual,planner,weekly,goals,routine,neurodivergent,focus,dopamine,timeblind</td><td class="mono">✓ 97</td></tr>
+    <tr><td><strong>Promotional text</strong> (170)</td><td>New: four voices — from Plain to Extra Spicy. Your blocks, your bucket, your rules. No streaks. No subscription. Ever.</td><td class="mono">✓ 124</td></tr>
+    <tr><td><strong>Category</strong></td><td>Primary: Productivity · Secondary: Lifestyle</td><td>—</td></tr>
+    <tr><td><strong>Price</strong></td><td>$5.99 one-time (Tier 6). No IAP, no subscription — say so loudly in the listing.</td><td>—</td></tr>
+  </table>
+  <h3>Description (long)</h3>
+  <div class="copyblock">Calendars lie to you. You block out 7am gym, life happens at 6:45, and now the whole week feels broken.
+
+Kachunk doesn't do calendars. You get BLOCKS — chunky, tossable, weirdly satisfying blocks — and BUCKETS, one per commitment. Gym 3× a week? Three blocks. Do a gym thing (any day! that's the point!), drag a block in. KACHUNK. That sound is the whole app.
+
+WHY IT WORKS WHEN PLANNERS DIDN'T
+• A week can absorb a bad Tuesday. A timeline can't.
+• No streaks — nothing to break, nothing to mourn at 11:59pm.
+• Chips give partial credit: 5 of 8 glasses still counts. Good enough is recorded as good enough.
+• The Roundup: ONE notification a day, at a time you pick. When the week ends, Kachunk asks what actually happened — it never resets you into the void.
+• Receipts: your proof, in dots. In-progress counts as done on the overview, because it is.
+
+BUILT CALM
+Designed with ADHD brains in mind: a quiet canvas, six soft colors, big type, one action per screen, and physics you can fidget with. Toss the blocks. Stack them. It's allowed.
+
+FOUR VOICES
+Plain (just the facts) · Zesty (a little cheek — default) · Extra Spicy (roast me) · Sugar Rush (maximum pompoms).
+
+YOUR DATA IS YOURS
+Everything lives on your device. Coming soon: optional sync to your own Google Drive — your account, your file, no server of ours anywhere.
+
+$5.99. Once. That's it. No subscription, no "premium" blocks, no guilt.</div>
+  <div class="charcount">~1,480 chars (limit 4,000)</div>
+
+  <h2>Google Play</h2>
+  <table>
+    <tr><th>Field</th><th>Content</th><th>Limit</th></tr>
+    <tr><td><strong>Title</strong></td><td>Kachunk: Visual Habit Buckets</td><td class="mono">30 · ✓ 29</td></tr>
+    <tr><td><strong>Short description</strong></td><td>Drag blocks into weekly buckets. No streaks, no shame, no subscription.</td><td class="mono">80 · ✓ 72</td></tr>
+    <tr><td><strong>Full description</strong></td><td>Apple long description, minus the price line (Play shows price natively), plus keyword-natural phrasing in the first 167 chars (Play indexes description text).</td><td class="mono">4,000</td></tr>
+    <tr><td><strong>Category / tags</strong></td><td>Productivity · tags: habit tracker, ADHD, visual planner</td><td>—</td></tr>
+  </table>
+
+  <h2>Screenshot set <span class="muted" style="font-size:14px">(finished art in the <a href="assets.html">Asset Pack</a>)</span></h2>
+  <table>
+    <tr><th>#</th><th>Screen</th><th>Caption (benefit-first, per ASO conversion research)</th></tr>
+    <tr><td class="mono">1</td><td>The floor, blocks mid-tumble</td><td><strong>"Your week, in blocks you can hold."</strong></td></tr>
+    <tr><td class="mono">2</td><td>Block dropping into bucket + confetti</td><td><strong>"Did the thing? KACHUNK. That's it."</strong></td></tr>
+    <tr><td class="mono">3</td><td>Roundup sheet</td><td><strong>"One notification. It asks — never assumes."</strong></td></tr>
+    <tr><td class="mono">4</td><td>Receipts dots view</td><td><strong>"Proof, not pressure. Partial credit counts."</strong></td></tr>
+    <tr><td class="mono">5</td><td>Voice picker</td><td><strong>"From Plain to Extra Spicy — pick your energy."</strong></td></tr>
+  </table>
+  <p class="small">First 3 decide conversion. Device frames on brand-canvas backgrounds, caption top, Bricolage 800. Play also needs the 1024×500 feature graphic (in the asset pack).</p>
+
+  <h2>Ratings, reviews &amp; featuring</h2>
+  <div class="card">
+    <p class="small"><strong>Review prompt timing:</strong> after the user's first completed Restack — their success moment — never on first launch. <strong>Apple featuring pitch:</strong> inclusivity/ND-first angle via the App Store promote form; windows: ADHD Awareness Month (October), GAAD (May). Tiimo's Design Award nomination proves the lane exists. <strong>Claim discipline:</strong> "designed with ADHD brains in mind" everywhere; no treatment claims anywhere in store copy.</p>
+  </div>
+
+  <h2>Wrapper checklist (post-clearance)</h2>
+  <ul class="checklist">
+    <li>Digital Asset Links + TWA via PWABuilder → Play internal track</li>
+    <li>iOS Capacitor shell; native local-notification bridge for the Roundup (fixes web-push limits)</li>
+    <li>Privacy nutrition labels: data not collected (truthfully — everything is on-device)</li>
+    <li>Store listing A/B: subtitle "Habit buckets for ADHD brains" vs "The no-streak habit tracker"</li>
+  </ul>
+
+  <div class="footer"><span>Kachunk. — store metadata plan v1</span><span style="margin-left:auto">Char limits per Apple/Play current specs; verify at submission</span></div>
+</div>
+</body>
+</html>

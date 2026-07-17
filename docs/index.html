@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachunk — Command Center</title>
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="stylesheet" href="doc.css">
+<style>
+.northstar{display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap;}
+.health{margin-left:auto; text-align:right;}
+.phaserail{display:flex; gap:0; margin:18px 0 6px; overflow-x:auto; padding-bottom:6px;}
+.phase{flex:1; min-width:118px; position:relative; padding:0 8px 0 0;}
+.phase .bar{height:8px; border-radius:99px; background:var(--hairline); margin-bottom:8px;}
+.phase.done .bar{background:var(--good);}
+.phase.active .bar{background:var(--hero);}
+.phase .nm{font-weight:700; font-size:13.5px;}
+.phase .ms{font-size:11.5px; color:var(--muted); font-family:"Figtree",sans-serif;font-variant-numeric:tabular-nums;}
+.lanes{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px;}
+.lane h3{margin-top:0; display:flex; align-items:center; gap:8px;}
+.lane .cardlet{background:var(--inset); border-radius:12px; padding:10px 12px; margin-bottom:8px; font-size:14px; color:var(--text);}
+.lane .cardlet strong{color:var(--ink); display:block; font-size:14px;}
+.lane .cardlet .ie{font-family:"Figtree",sans-serif;font-variant-numeric:tabular-nums; font-size:10.5px; color:var(--muted);}
+.kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px;}
+.kpi{background:var(--surface); border:1px solid var(--hairline); border-radius:16px; padding:14px;}
+.kpi .n{font-family:"Bricolage Grotesque",sans-serif; font-weight:800; font-size:30px;}
+.kpi .t{font-size:12px; color:var(--muted);}
+.stale{font-family:"Figtree",sans-serif;font-variant-numeric:tabular-nums; font-size:11.5px;}
+.journal{border-left:3px solid var(--hairline); padding-left:16px; margin:8px 0;}
+.journal .entry{margin-bottom:14px;}
+.journal .d{font-family:"Figtree",sans-serif;font-variant-numeric:tabular-nums; font-size:11.5px; color:var(--muted);}
+</style>
+</head>
+<body>
+<header class="dochead">
+  <span class="logo">Kachunk<span class="dot">.</span> <span class="muted" style="font-weight:400;font-size:14px">/ command center</span></span>
+  <nav class="docnav">
+    <a class="on" href="index.html">Command Center</a><a href="brand.html">Brand</a><a href="positioning.html">Positioning</a><a href="launch.html">Launch</a><a href="store.html">Store</a><a href="purchase-list.html">Purchase List</a><a href="assets.html">Asset Pack</a>
+  </nav>
+</header>
+<div class="wrap">
+
+  <!-- 1 · North star + health -->
+  <div class="card">
+    <div class="northstar">
+      <div style="max-width:560px">
+        <div class="kicker" style="margin-top:0">North star</div>
+        <h1 style="font-size:clamp(24px,3.6vw,34px)">The week you can hold.</h1>
+        <p>Kachunk replaces the calendar its people can't keep with weekly <strong>buckets</strong> they fill with toy-like <strong>blocks</strong> — one block per done thing. For ADHD adults, visual thinkers, and default parents whose priorities reshuffle faster than a calendar can. One notification. Zero streak shame. Pay once.</p>
+      </div>
+      <div class="health">
+        <span class="badge active">● ON TRACK</span><br>
+        <span class="stale muted">updated 2026-07-17 · v1 final, launch sprint</span>
+      </div>
+    </div>
+
+    <!-- 2 · Phase rail -->
+    <div class="phaserail">
+      <div class="phase done"><div class="bar"></div><div class="nm">Concept</div><div class="ms">premise locked</div></div>
+      <div class="phase done"><div class="bar"></div><div class="nm">Research</div><div class="ms">5 studies · 07-16</div></div>
+      <div class="phase done"><div class="bar"></div><div class="nm">Brand</div><div class="ms">v3 pretty palettes</div></div>
+      <div class="phase done"><div class="bar"></div><div class="nm">Build</div><div class="ms">E2E green · 6 design passes</div></div>
+      <div class="phase active"><div class="bar"></div><div class="nm">Deploy</div><div class="ms">GitHub Pages</div></div>
+      <div class="phase"><div class="bar"></div><div class="nm">Launch</div><div class="ms">90-day plan drafted</div></div>
+      <div class="phase"><div class="bar"></div><div class="nm">Post-launch</div><div class="ms">—</div></div>
+    </div>
+    <p class="small muted" style="margin:4px 0 0">Pattern credits: phase lifecycle (Asana product-dev template) · health + staleness chip (Linear project updates) · single-page drill-down (Notion).</p>
+  </div>
+
+  <!-- 3 · Now / Next / Later -->
+  <h2>Now / Next / Later</h2>
+  <div class="lanes">
+    <div class="card lane">
+      <h3><span class="badge active">NOW</span></h3>
+      <div class="cardlet"><strong>Ship to GitHub Pages</strong>Create public repo via browser, upload build, enable Pages, verify live URL.<span class="ie">impact ●●● · effort ●</span></div>
+      <div class="cardlet"><strong>Live-device pass</strong>Walk every screen on the deployed URL; screenshot for the case study.<span class="ie">impact ●●● · effort ●</span></div>
+    </div>
+    <div class="card lane">
+      <h3><span class="badge queued">NEXT</span></h3>
+      <div class="cardlet"><strong>Name clearance, for real</strong>USPTO TESS knockout (cl. 9/42) + WHOIS + handle registrations for KACHUNK.<span class="ie">impact ●●● · effort ●●</span></div>
+      <div class="cardlet"><strong>Google sign-in + Drive appData sync</strong>OAuth client, Drive appDataFolder read/write, conflict rule = last-write-wins.<span class="ie">impact ●●● · effort ●●●</span></div>
+      <div class="cardlet"><strong>Store wrapper</strong>PWABuilder → Play (TWA) + iOS shell; store listings from the metadata plan.<span class="ie">impact ●● · effort ●●</span></div>
+    </div>
+    <div class="card lane">
+      <h3><span class="badge queued">LATER</span></h3>
+      <div class="cardlet"><strong>Calm mode + full dark-mode QA</strong>Desaturation toggle per ND research; dark palette shipped, needs a polish pass.</div>
+      <div class="cardlet"><strong>Widgets</strong>Home-screen bucket widget (the killer retention surface).</div>
+      <div class="cardlet"><strong>Shared buckets</strong>Household mode — the "default parent" wedge feature.</div>
+    </div>
+  </div>
+
+  <!-- 4 · Status journal -->
+  <h2>Status updates</h2>
+  <div class="card">
+    <div class="journal">
+      <div class="entry"><div class="d">2026-07-17 · 7th update</div><strong>Final design sign-off → launch sprint authorized.</strong> Founder's last fix list landed and verified on screen: ink recap with block-tinted light cards + hairline dark-mode fit box, terracotta mark period, neutralized aqua (#7E9B95), notification page rebuilt from the exact Settings markup, icons on bucket rows, Receipts fully on the Settings surface language, mini-block visual averages in the report tiles, ghost toast removed, Gentle Mist blue as the first/default block. "OK LAUNCH AFTER THAT" — deploying.</div>
+      <div class="entry"><div class="d">2026-07-17 · 6th update</div><strong>The font incident.</strong> Google Fonts CDN was silently unreachable in the review sandbox — every screenshot shipped with fallback fonts and the wordmark "looked like a scrabble tile" (founder, correctly). Root-caused, then made structural: all 10 weights bundled as local woff2 in <span class="mono">/fonts/</span>, CDN links removed everywhere, service worker caches them. New brand law: if the fonts aren't in the repo, the brand isn't in the product.</div>
+      <div class="entry"><div class="d">2026-07-17 · 5th update</div><strong>Design system v3 locked through six founder passes.</strong> Founder-supplied Pinterest palette ("Pretty Palettes #003") replaced the pastel rainbow; real-3D WebGL bricks (clearcoat, tumble-and-right-itself) replaced flat tiles; Week + Today merged into one physical board with a shelf divider; week sweep became an on-board tap-to-claim ceremony; Settings-quiet Google-Clock surface language rolled out to every page; confetti + synth sound replaced toasts; 100-icon Lucide picker + custom hex; 4-step full-color onboarding with goal-fit math.</div>
+      <div class="entry"><div class="d">2026-07-16 · 4th update</div><strong>Build phase closed green.</strong> Headless E2E passes end-to-end: onboarding → physics floor → toss → bucket-sheet bulk entry → chips → Receipts → Roundup (record / adjust / restack, history archived) → Settings → drag-to-bucket capture. Three real bugs found &amp; fixed by the test harness (pointer-vs-body drop detection, event swallowing by bucket buttons, text-selection during drag). Next action: deploy.</div>
+      <div class="entry"><div class="d">2026-07-16 · 3rd update</div><strong>Design system v2.</strong> Founder killed the orange/black direction ("awful"). Deep-dive research into ND-favored aesthetics (Tiimo, Finch, Gentler Streak, calm-tech 2026) produced the blueberry-milk system: #F7F5FB canvas, plum ink, violet hero, six flat toy-pastels with hard offset shadows, Bricolage Grotesque + Inclusive Sans. Line icons only, everywhere.</div>
+      <div class="entry"><div class="d">2026-07-16 · 2nd update</div><strong>Name + vocabulary locked.</strong> KACHUNK won the screen (fanciful, collision-free in software, literally the product's sound). Vocab family: Colors → Blocks/Chips → Tray → Buckets → Roundup → Restack → Receipts. Voices: Plain / Zesty / Extra Spicy / Sugar Rush.</div>
+      <div class="entry"><div class="d">2026-07-16 · 1st update</div><strong>Research fan-out complete.</strong> Five parallel studies: naming screen (22 candidates), audience/market (40+ cited sources), UX vocabulary benchmarks, PM command-center patterns (Asana/ClickUp/Linear/Notion), zero-audience launch playbooks.</div>
+    </div>
+  </div>
+
+  <!-- 5 · Decision log -->
+  <h2>Decision log</h2>
+  <table>
+    <tr><th>ID</th><th>Decision</th><th>Why</th><th>Status</th></tr>
+    <tr><td class="mono">D-01</td><td><strong>Weekly buckets, never daily streaks</strong></td><td>Broken-streak research (Silverman &amp; Barasch JCR 2022); flexible-schedule field experiment (Beshears/Milkman). The week absorbs bad days.</td><td><span class="badge done">LOCKED</span></td></tr>
+    <tr><td class="mono">D-02</td><td><strong>Never auto-reset the week</strong></td><td>Founder rule: "You don't just reset into the void." Roundup asks <em>did you do it / how many</em>, records, then the user restacks.</td><td><span class="badge done">LOCKED</span></td></tr>
+    <tr><td class="mono">D-03</td><td><strong>Name: KACHUNK</strong></td><td>Fanciful mark (strongest TM tier), no software collisions found, is literally the sound of the core interaction. Verb-able.</td><td><span class="badge risk">LOCKED · needs TESS/WHOIS clearance</span></td></tr>
+    <tr><td class="mono">D-04</td><td><strong>Brand v3: pretty palettes / paper + hairlines</strong></td><td>Founder rejected orange+black (v1) and the pastel-rainbow v2 ("childish"); supplied the Pinterest palette herself. Warm paper, slate ink, terracotta-only accent, Settings-quiet chrome.</td><td><span class="badge done">LOCKED</span></td></tr>
+    <tr><td class="mono">D-05</td><td><strong>Line icons only</strong></td><td>Founder directive. Also solves the COGA "never color alone" rule — every block carries an icon.</td><td><span class="badge done">LOCKED</span></td></tr>
+    <tr><td class="mono">D-06</td><td><strong>Local-first; sync via user's own Google Drive appData (later)</strong></td><td>Zero hosting cost forever, no server to breach, "your data on your account." Google button ships as a stub.</td><td><span class="badge done">LOCKED</span></td></tr>
+    <tr><td class="mono">D-07</td><td><strong>One-time purchase (~$5.99), free web demo</strong></td><td>Subscription-fatigue evidence + Streaks precedent + ADHD-tax sensitivity. Store build paid; PWA stays free as the funnel.</td><td><span class="badge done">LOCKED</span></td></tr>
+    <tr><td class="mono">D-08</td><td><strong>Physics = Matter.js, bundled locally</strong></td><td>Real toss/stack/tumble beats fake tweens; 83KB; offline-safe (no CDN dependency).</td><td><span class="badge done">LOCKED</span></td></tr>
+    <tr><td class="mono">D-09</td><td><strong>Vocabulary family</strong></td><td>Colors / Blocks / Chips / Tray / Buckets / Roundup / Restack / Receipts — concrete physical nouns, benchmarked against Finch/CARROT/Apple patterns. "Buckets" kept over "Bins": it's the founder's hero concept.</td><td><span class="badge done">LOCKED</span></td></tr>
+    <tr><td class="mono">D-10</td><td><strong>Chart palette ≠ block palette</strong></td><td>Pastel fills failed the CVD validator as data-series colors; a validated 6-color deep set (all checks pass) is reserved for charts/reports.</td><td><span class="badge done">LOCKED</span></td></tr>
+    <tr><td class="mono">D-11</td><td><strong>Real 3D bricks (Three.js), not styled tiles</strong></td><td>Founder: blocks must spin in 3D and double as a fidget spinner. RoundedBox + clearcoat, tumble on toss, rights itself on settle. Physics stays 2D Matter.js under a WebGL skin.</td><td><span class="badge done">LOCKED</span></td></tr>
+    <tr><td class="mono">D-12</td><td><strong>One physical board: Week + Today share the floor</strong></td><td>A thin shelf divides unplanned (above) from today's plan (below); dragging through is the only door. Day planning became spatial instead of a separate grid screen — founder killed the time-grid.</td><td><span class="badge done">LOCKED</span></td></tr>
+    <tr><td class="mono">D-13</td><td><strong>Week sweep happens on the board</strong></td><td>End-of-week review is tap-to-claim on the real blocks (50% opacity, flight-to-bucket), not a form. Restack keeps the "never reset into the void" rule physical.</td><td><span class="badge done">LOCKED</span></td></tr>
+    <tr><td class="mono">D-14</td><td><strong>Fonts bundled in-repo, never CDN</strong></td><td>CDN failure shipped fallback fonts silently. Bricolage/Inclusive/Figtree woff2 live in /fonts/, SW-cached.</td><td><span class="badge done">LOCKED</span></td></tr>
+    <tr><td class="mono">D-15</td><td><strong>Mark: aqua block, terracotta period</strong></td><td>Single off-kilter block, neutral aqua #7E9B95 (founder asked for less saturation), lowercase k, terracotta dot = the block landing.</td><td><span class="badge done">LOCKED</span></td></tr>
+    <tr><td class="mono">D-16</td><td><strong>Celebration = physics + confetti + synth, never messages</strong></td><td>Success toasts felt like chrome; confetti in block colors + the kachunk chime are the reward. Toasts demoted to errors/system, top of screen.</td><td><span class="badge done">LOCKED</span></td></tr>
+  </table>
+
+  <!-- 6 · Asset registry -->
+  <h2>Asset registry</h2>
+  <table>
+    <tr><th>Asset</th><th>Where</th><th>Status</th></tr>
+    <tr><td><strong>Live app</strong> (PWA, installable)</td><td><a href="../index.html">/ (repo root)</a></td><td><span class="badge active">DEPLOYING</span></td></tr>
+    <tr><td><strong>App icon + favicon</strong> (line mark, 4 PNG sizes + SVG)</td><td><a href="../icon-512.png">icon-512</a> · <a href="../favicon.svg">favicon.svg</a></td><td><span class="badge done">FINAL</span></td></tr>
+    <tr><td><strong>Brand bible</strong></td><td><a href="brand.html">brand.html</a></td><td><span class="badge done">FINAL</span></td></tr>
+    <tr><td><strong>Positioning + personas</strong> (research-backed, cited)</td><td><a href="positioning.html">positioning.html</a></td><td><span class="badge done">FINAL</span></td></tr>
+    <tr><td><strong>Launch plan</strong> (0 → 1,000, zero audience)</td><td><a href="launch.html">launch.html</a></td><td><span class="badge done">FINAL</span></td></tr>
+    <tr><td><strong>Store metadata plan</strong></td><td><a href="store.html">store.html</a></td><td><span class="badge done">FINAL</span></td></tr>
+    <tr><td><strong>Purchase + implement list</strong></td><td><a href="purchase-list.html">purchase-list.html</a></td><td><span class="badge done">FINAL</span></td></tr>
+    <tr><td><strong>Designed asset pack</strong> (store shots, feature graphic, PH kit, OG)</td><td><a href="assets.html">assets.html</a></td><td><span class="badge done">FINAL</span></td></tr>
+  </table>
+
+  <!-- 7 · Risks -->
+  <h2>Risks &amp; blockers</h2>
+  <div class="card">
+    <p><span class="badge hi">HIGH RISK</span> <strong>Name is screened, not cleared.</strong> The KACHUNK screen found no collisions, but no USPTO/TESS search or counsel review has run. Do not spend on domains/handles/store listings until clearance. <em>Unblocks:</em> TESS knockout + WHOIS, ~1 hr + optional counsel.</p>
+    <p><span class="badge risk">MEDIUM</span> <strong>iOS notification limits.</strong> Web-push on iOS requires the installed (Add-to-Home-Screen) app and stays best-effort. Mitigated in copy + the Roundup dot; fully solved by the store wrapper.</p>
+    <p><span class="badge risk">MEDIUM</span> <strong>Google sign-in is a stub.</strong> Drive appData sync needs an OAuth client (free, ~1 day inc. review friction). Architecture already assumes it (D-06).</p>
+    <p><span class="badge queued">LOW</span> <strong>Public repo = public source.</strong> Accepted for the prototype (D-07 funnel logic); revisit at store submission.</p>
+  </div>
+
+  <!-- 8 · Launch checklist by channel -->
+  <h2>Launch checklist <span class="muted" style="font-size:14px">(by channel — coverage gaps visible at a glance)</span></h2>
+  <div class="grid2">
+    <div class="card"><h3 style="margin-top:0">Owned</h3><ul class="checklist">
+      <li class="done">PWA live on GitHub Pages</li>
+      <li class="done">Press/asset kit page</li>
+      <li>kachunk.app domain purchased → points at Pages</li>
+      <li>Waitlist page + referral mechanic (LaunchList free tier)</li>
+    </ul></div>
+    <div class="card"><h3 style="margin-top:0">Communities</h3><ul class="checklist">
+      <li>30-day genuine-participation residency (r/adhdwomen, r/productivity, 2 Discord body-doubling servers)</li>
+      <li>Beta cohort of 30–50 from r/SideProject + Discords</li>
+      <li>Show HN post (app playable, no signup wall)</li>
+      <li>Product Hunt launch (Tue/Wed, waitlist as launch army)</li>
+    </ul></div>
+    <div class="card"><h3 style="margin-top:0">Creators</h3><ul class="checklist">
+      <li>50-creator ADHD/momtok seeding list (5K–100K followers)</li>
+      <li>Personalized gifting: lifetime codes + Loom notes</li>
+      <li>3–5×/week satisfying-UI short-form clips (TikTok/Reels/Shorts)</li>
+    </ul></div>
+    <div class="card"><h3 style="margin-top:0">Press / SEO</h3><ul class="checklist">
+      <li>Pitch 15 "best ADHD apps" listicle publishers</li>
+      <li>ADDitude editorial pitch (founder story, not ad)</li>
+      <li>Podcast guesting: Hacking Your ADHD + 5 mid-tier</li>
+      <li>Apple featuring pitch (inclusivity angle, October = ADHD Awareness Month)</li>
+    </ul></div>
+  </div>
+
+  <!-- 9 · KPI tiles -->
+  <h2>Metrics <span class="muted" style="font-size:14px">(defined now, measured at launch)</span></h2>
+  <div class="kpis">
+    <div class="kpi"><div class="n">—</div><div class="t">Waitlist signups · target 300 pre-launch</div></div>
+    <div class="kpi"><div class="n">—</div><div class="t">Installs · target 1,000 by day 90</div></div>
+    <div class="kpi"><div class="n">—</div><div class="t">W1 → W2 retention (did they Restack?) · target 35%</div></div>
+    <div class="kpi"><div class="n">—</div><div class="t">Avg blocks dropped / user / week · target ≥ 8</div></div>
+    <div class="kpi"><div class="n">—</div><div class="t">Store conversion to paid · target 4%</div></div>
+  </div>
+  <p class="small muted">Tile pattern: ClickUp calculation cards. The one metric that matters is the Restack rate — it means a full weekly loop closed.</p>
+
+  <!-- 10 · Shipped -->
+  <h2>Shipped</h2>
+  <table>
+    <tr><th>Date</th><th>What</th></tr>
+    <tr><td class="mono">07-17</td><td>Kachunk v1 final — real-3D physics board (drag/toss/tumble/shake) · combined Week + Today floor with shelf divider &amp; slot budget · on-board week sweep with claim flights · chips partial credit &amp; bulk entry · Receipts with mini-block averages · Settings (4 voices, sounds, brick sizes, export/import, reset) · name-personalized full-color onboarding with goal-fit math · 100-icon picker + custom hex · synth sound design + confetti · PWA shell (offline, installable, bundled fonts)</td></tr>
+    <tr><td class="mono">07-17</td><td>Brand system v3 "pretty palettes" — brand bible, aqua/terracotta mark, 4 icon PNGs + favicon</td></tr>
+    <tr><td class="mono">07-16</td><td>Research fan-out (5 studies) · positioning + personas · launch plan · store metadata plan</td></tr>
+  </table>
+
+  <div class="footer">
+    <span>Kachunk. — internal · built as a live case study</span>
+    <span style="margin-left:auto">Command-center patterns researched from Asana · ClickUp · Linear · Notion</span>
+  </div>
+</div>
+</body>
+</html>

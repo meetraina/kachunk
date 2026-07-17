@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachunk — Positioning & Personas</title>
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="stylesheet" href="doc.css">
+<style>
+.stat{background:var(--surface);border:2px solid var(--hairline);border-radius:16px;box-shadow:0 3px 0 var(--hairline);padding:16px;}
+.stat .n{font-family:"Bricolage Grotesque";font-weight:800;font-size:28px;line-height:1.05;}
+.stat .t{font-size:12.5px;color:var(--muted);margin-top:4px;}
+.persona{border-top:6px solid var(--hairline);}
+.persona.p1{border-top-color:var(--mist-d)} .persona.p2{border-top-color:var(--peachw-d)}
+.persona.p3{border-top-color:var(--glow-d)} .persona.p4{border-top-color:var(--sand-d)}
+.persona h3{margin-top:0}
+.persona .meta{font-family:"Figtree",sans-serif;font-variant-numeric:tabular-nums;font-size:11.5px;color:var(--muted);letter-spacing:.06em;}
+sup a{border:none;font-size:11px;color:var(--hero-d)}
+.srcs{font-size:12.5px;color:var(--muted);columns:2;column-gap:28px;}
+.srcs li{margin-bottom:6px;-webkit-column-break-inside:avoid;}
+@media(max-width:700px){.srcs{columns:1}}
+</style>
+</head>
+<body>
+<header class="dochead">
+  <span class="logo">Kachunk<span class="dot">.</span> <span class="muted" style="font-weight:400;font-size:14px">/ positioning</span></span>
+  <nav class="docnav">
+    <a href="index.html">Command Center</a><a href="brand.html">Brand</a><a class="on" href="positioning.html">Positioning</a><a href="launch.html">Launch</a><a href="store.html">Store</a><a href="purchase-list.html">Purchase List</a><a href="assets.html">Asset Pack</a>
+  </nav>
+</header>
+<div class="wrap">
+  <div class="kicker">Brand positioning · research-backed · 2026-07-17</div>
+  <h1>For the people calendars quietly fail.</h1>
+  <p class="lede"><strong>Positioning statement:</strong> For adults whose priorities reshuffle faster than a calendar can — ADHD brains, visual thinkers, default parents — Kachunk is the weekly commitment app that replaces schedules with touchable blocks and forgiving buckets, because a week can absorb a bad Tuesday and a timeline can't. Unlike streak-based habit trackers and subscription day-planners, Kachunk never shames a miss, never auto-resets, and never bills twice.</p>
+
+  <div class="callout"><strong>One-line distillation:</strong> "A week you can hold. Blocks you can move. Nothing you can break." — every clause is defensible with the citations below.</div>
+
+  <h2>1 · The problem, quantified</h2>
+  <div class="grid3">
+    <div class="stat"><div class="n">~5%</div><div class="t">of app users remain after 30 days (productivity ≈ 4.1%) — the category's churn IS the market.<sup><a href="#s1">[1]</a></sup></div></div>
+    <div class="stat"><div class="n">80%</div><div class="t">of New Year's resolutions abandoned by February; Strava's 800M-activity analysis pinpoints "Quitters' Day" at Jan 19.<sup><a href="#s2">[2]</a></sup></div></div>
+    <div class="stat"><div class="n">−8.3pp</div><div class="t">continuation drop when users see a broken streak (66.2%→57.9%, identical behavior) — streak UIs manufacture quitting.<sup><a href="#s3">[3]</a></sup></div></div>
+    <div class="stat"><div class="n">2×</div><div class="t">dropout among people trained on a rigid daily window vs a flexible one (Beshears/Milkman gym field experiment, Management Science).<sup><a href="#s4">[4]</a></sup></div></div>
+    <div class="stat"><div class="n">48%</div><div class="t">longer streaks when forgiveness mechanics exist (Duolingo freeze data) — Kachunk's week is forgiveness as architecture.<sup><a href="#s5">[5]</a></sup></div></div>
+    <div class="stat"><div class="n">47%</div><div class="t">of consumers actively canceled a subscription in 2026 (up from 31% in 2024); only 16% of US consumers prefer software subscriptions.<sup><a href="#s6">[6]</a></sup></div></div>
+  </div>
+
+  <h2>2 · The audiences, sized</h2>
+  <table>
+    <tr><th>Segment</th><th>Size</th><th>Why calendars fail them</th></tr>
+    <tr><td><strong>Adults with ADHD</strong> (beachhead)</td><td>15.5M US adults diagnosed (6.0%); ~366M adults symptomatic globally; diagnoses among women 30–49 nearly doubled 2020–22.<sup><a href="#s7">[7]</a></sup></td><td>Time blindness is a focal adult symptom; externalized, visible progress is the standard clinical recommendation.<sup><a href="#s8">[8]</a></sup></td></tr>
+    <tr><td><strong>Default parents / overloaded moms</strong></td><td>86% of working mothers handle all household responsibility; mothers carry 72.6% of cognitive household labor, which significantly predicts burnout (p=.005).<sup><a href="#s9">[9]</a></sup></td><td>Their calendar is everyone else's; their own commitments have no slot to survive in.</td></tr>
+    <tr><td><strong>Freelancers / creators</strong></td><td>64M Americans freelanced in 2023 — 38% of the workforce.<sup><a href="#s10">[10]</a></sup></td><td>Feast-or-famine weeks; fixed slots and daily streaks structurally punish variable workloads.</td></tr>
+    <tr><td><strong>Family caregivers</strong></td><td>63M US adults (1 in 4), up 45% since 2015; 6 in 10 also employed.<sup><a href="#s11">[11]</a></sup></td><td>Care needs shift daily; plans collapse without warning.</td></tr>
+    <tr><td><strong>Shift &amp; irregular workers</strong></td><td>~16% of US workers on non-daytime shifts; ≥17% with unstable schedules.<sup><a href="#s12">[12]</a></sup></td><td>"Every day at 7am" is impossible by contract.</td></tr>
+    <tr><td><strong>Chronic illness / spoonies</strong></td><td>6 in 10 US adults live with a chronic condition; spoon theory (a daily energy budget) is already this community's native metaphor — and it's a bucket.<sup><a href="#s13">[13]</a></sup></td><td>Energy, not time, is the constraint; quotas flex where timelines snap.</td></tr>
+  </table>
+
+  <h2>3 · The market</h2>
+  <div class="grid3">
+    <div class="stat"><div class="n">$1.9B→$6.7B</div><div class="t">ADHD apps 2025→2033 (17.5% CAGR); adults are 55.9% of users.<sup><a href="#s14">[14]</a></sup></div></div>
+    <div class="stat"><div class="n">$1.9B→$6.4B</div><div class="t">Habit-tracking apps 2025→2034 (14.2% CAGR); North America 35%+ share.<sup><a href="#s15">[15]</a></sup></div></div>
+    <div class="stat"><div class="n">$5.99</div><div class="t">Streaks' one-time price — a decade of top-grossing paid productivity proves pay-once works in this exact category.<sup><a href="#s16">[16]</a></sup></div></div>
+  </div>
+  <h3>Competitive frame</h3>
+  <table>
+    <tr><th>Competitor</th><th>Model</th><th>Their documented weakness → our wedge</th></tr>
+    <tr><td><strong>Tiimo</strong> (Apple App of the Year 2025)</td><td>Freemium, ~$55/yr</td><td>Still schedule-shaped (a prettier timeline) + subscription. We're quota-shaped + pay once. Their success validates "neurodivergent-first visual planner" as a featurable category.</td></tr>
+    <tr><td><strong>Finch</strong></td><td>Freemium, ~$40–70/yr</td><td>The pet becomes one more dependent to feed; all-or-nothing goal tracking. Our blocks need nothing from you.</td></tr>
+    <tr><td><strong>Streaks / Habitica</strong></td><td>$5.99 one-time / freemium</td><td>Streak-break shame; Habitica punishes misses with HP loss. We have no streaks to break.</td></tr>
+    <tr><td><strong>Structured / Sunsama</strong></td><td>Subscription ($15–240/yr)</td><td>Daily timeboxing that demands replanning when the day slips — the exact failure we exist to absorb.</td></tr>
+  </table>
+
+  <h2>4 · The science hook (for press &amp; store copy)</h2>
+  <p class="small">Motivation deficits in ADHD map to dopamine reward-pathway differences (Volkow et al.) — Kachunk pays out a tangible reward event per rep: a block you physically move, with sound and haptics.<sup><a href="#s17">[17]</a></sup> Gamified immediate feedback shows large effects on sustained attention in ADHD RCTs (d≈0.95–1.25, in children — flag when quoting).<sup><a href="#s18">[18]</a></sup> Clinical guidance for time blindness is to externalize time and progress — the floor of blocks IS the week, made visible.<sup><a href="#s8">[8]</a></sup> And the weekly bucket is a forgiveness mechanic by construction: a missed Monday is invisible if Thursday catches it.<sup><a href="#s3">[3]</a>,<a href="#s5">[5]</a></sup></p>
+  <div class="callout warn"><strong>Claim discipline:</strong> "designed with ADHD brains in mind" ✓ · "treats/helps ADHD" ✗ (FTC + community backlash). The gamification RCT is pediatric; cite it as mechanism, not outcome promise.</div>
+
+  <h2>5 · Personas</h2>
+  <div class="grid2">
+    <div class="card persona p1">
+      <h3>Late-Diagnosis Maya</h3>
+      <div class="meta">28–38 · DIAGNOSED AT 31 · MARKETING MANAGER</div>
+      <p class="small">One of the fastest-growing cohorts (women 30–49 diagnoses ~doubled 2020–22). Third abandoned planner this year; pays the "ADHD tax" (~$14K/yr excess cost per adult) and resents recurring bills. Found us on a "apps that don't shame you" thread.</p>
+      <p class="small"><strong>Stays because:</strong> per-rep dopamine (block + sound + haptic), the week absorbs bad days, and she paid once — no renewal guilt.</p>
+    </div>
+    <div class="card persona p2">
+      <h3>Default-Parent Dana</h3>
+      <div class="meta">35–44 · TWO KIDS · HOUSEHOLD COO</div>
+      <p class="small">Among the 86% of working moms carrying the whole household; 72.6% of the family's cognitive labor is hers, and that share predicts her burnout. Her own gym/PT/friends have no calendar slot that survives a school pickup.</p>
+      <p class="small"><strong>Stays because:</strong> "Gym 3× this week — any three times" fits a week she can't predict; one notification respects a full mind; the third block of the week feels like something done for <em>her</em>.</p>
+    </div>
+    <div class="card persona p3">
+      <h3>Feast-or-Famine Jules</h3>
+      <div class="meta">24–34 · FREELANCE DESIGNER · CRUNCH/DRIFT CYCLES</div>
+      <p class="small">One of 64M US freelancers. Lost a 40-day streak during a client crunch and deleted the app that day (nearly half of streak-holders do unwanted tasks just to keep streaks — until they quit entirely).</p>
+      <p class="small"><strong>Stays because:</strong> weekly quotas are workload-shaped, the floor doubles as a week-at-a-glance, and pay-once matches variable income (47% canceled a subscription last year).</p>
+    </div>
+    <div class="card persona p4">
+      <h3>Spread-Thin Sam</h3>
+      <div class="meta">20–26 · STUDENT · ADHD + SPOONIE OVERLAP</div>
+      <p class="small">~16% of college students report ADHD; schedule changes every semester, energy changes every day. Habitica's HP loss turned a bad brain day into punishment; Finch's pet became a chore.</p>
+      <p class="small"><strong>Stays because:</strong> chips give partial credit ("5 of 8 counts"), blocks need no feeding, forgiveness is structural not purchasable, and $5.99 is student money.</p>
+    </div>
+  </div>
+
+  <h2>6 · Pricing position</h2>
+  <p><strong>$5.99 one-time</strong> (store builds), free installable web app as the funnel. Evidence: >50% of in-app purchases sit between $0.49–$9.99; Streaks' decade at $5.99; 89% of consumers underestimate subscription spend ($273 actual vs $86 perceived/mo) — "pay once, keep forever" is an economic <em>and</em> emotional fit for an audience taxed by forgotten renewals.<sup><a href="#s6">[6]</a>,<a href="#s16">[16]</a>,<a href="#s19">[19]</a></sup> <span class="badge risk">GAP</span> No survey-grade ADHD-community pricing data exists; run a 100-person community poll before locking store copy.</p>
+
+  <h2>Sources</h2>
+  <ol class="srcs">
+    <li id="s1"><a href="https://sendbird.com/blog/app-retention-benchmarks-broken-down-by-industry">Sendbird — app retention benchmarks by industry</a></li>
+    <li id="s2"><a href="https://www.inc.com/jeff-haden/a-study-of-800-million-activities-predicts-most-new-years-resolutions-will-be-abandoned-on-january-19-how-you-cancreate-new-habits-that-actually-stick.html">Inc — Strava 800M-activity "Quitters' Day"</a>; <a href="https://www.abccolumbia.com/2021/12/31/research-shows-80-of-people-abandon-their-new-years-resolutions-by-february/">80% by February</a></li>
+    <li id="s3"><a href="https://academic.oup.com/jcr/article/49/6/1095/6623414">Silverman &amp; Barasch, Journal of Consumer Research 2022 — broken streaks</a></li>
+    <li id="s4"><a href="https://pubsonline.informs.org/doi/10.1287/mnsc.2020.3706">Beshears et al., Management Science 2021 — rigid vs flexible routines</a></li>
+    <li id="s5"><a href="https://trophy.so/blog/duolingo-gamification-case-study">Trophy — Duolingo streak-freeze data</a></li>
+    <li id="s6"><a href="https://www.readless.app/blog/subscription-fatigue-statistics-2026">Zuora SEI 2026 via Readless — cancellations</a>; <a href="https://business.yougov.com/content/41836-global-how-many-consumers-are-fine-monthly-softwar">YouGov — 16% prefer software subscriptions</a></li>
+    <li id="s7"><a href="https://www.cdc.gov/mmwr/volumes/73/wr/mm7340a1.htm">CDC MMWR 2024 — 15.5M US adults</a>; <a href="https://jogh.org/documents/2021/jogh-11-04009.pdf">Song et al., J Global Health — 366M adults</a>; <a href="https://www.epicresearch.org/articles/number-of-adhd-patients-rising-especially-among-women/">Epic Research — diagnosis growth in women</a></li>
+    <li id="s8"><a href="https://www.medicalnewstoday.com/articles/adhd-time-blindness">Time blindness reviews (Ptáček 2019; Weissenberger 2021)</a>; <a href="https://www.occupationaltherapy.com/articles/time-blindness-critical-executive-function-5790">OT.com — externalizing time</a></li>
+    <li id="s9"><a href="https://www.brighthorizons.com/newsroom/archive/mental-load-impact-working-mothers-study">Bright Horizons Modern Family Index</a>; <a href="https://link.springer.com/article/10.1007/s00737-024-01490-w">Arch Women's Mental Health 2024 — cognitive labor 72.6%</a></li>
+    <li id="s10"><a href="https://investors.upwork.com/news-releases/news-release-details/upwork-study-finds-64-million-americans-freelanced-2023-adding">Upwork 2023 freelance study</a></li>
+    <li id="s11"><a href="https://www.aarp.org/press/releases/2025-07-24-new-report-reveals-crisis-point-for-americas-63-million-family-caregivers.html">AARP/NAC Caregiving in the US 2025</a></li>
+    <li id="s12"><a href="https://www.bls.gov/news.release/flex2.t07.htm">BLS shift data</a>; <a href="https://www.epi.org/publication/irregular-work-scheduling-and-its-consequences/">EPI — irregular scheduling</a></li>
+    <li id="s13"><a href="https://www.cdc.gov/chronic-disease/about/">CDC chronic disease</a>; <a href="https://en.wikipedia.org/wiki/Spoon_theory">Spoon theory</a></li>
+    <li id="s14"><a href="https://www.grandviewresearch.com/industry-analysis/adhd-apps-market-report">Grand View Research — ADHD apps market</a></li>
+    <li id="s15"><a href="https://straitsresearch.com/report/habit-tracking-apps-market">Straits Research — habit-tracking market</a></li>
+    <li id="s16"><a href="https://66streaks.com/blog/is-streaks-app-free/">Streaks pricing</a>; <a href="https://apps.apple.com/us/app/streaks/id963034692">App Store listing</a></li>
+    <li id="s17"><a href="https://pubmed.ncbi.nlm.nih.gov/20856250/">Volkow et al. — ADHD reward pathway</a></li>
+    <li id="s18"><a href="https://www.frontiersin.org/journals/education/articles/10.3389/feduc.2025.1668260/full">Frontiers 2025 — gamification RCT (pediatric)</a></li>
+    <li id="s19"><a href="https://www.businessofapps.com/data/app-pricing/">Business of Apps — app pricing bands</a>; C+R Research via Readless — $273 vs $86</li>
+  </ol>
+  <p class="small muted">Persona claims trace to the cited stats; segment-level numbers are US unless noted. Nothing here is legal or financial advice; market-size figures are vendor estimates.</p>
+
+  <div class="footer"><span>Kachunk. — positioning v1</span><span style="margin-left:auto">Research date 2026-07-16</span></div>
+</div>
+</body>
+</html>
