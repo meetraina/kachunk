@@ -40,6 +40,10 @@ const ICONS = {
   download:'<path d="M12 3.5v11M7.5 10l4.5 4.5L16.5 10M4.5 20.5h15"/>',
   upload: '<path d="M12 14.5v-11M7.5 8L12 3.5 16.5 8M4.5 20.5h15"/>',
   trash:  '<path d="M4.5 6.5h15M9.5 6.5V4.8a1.3 1.3 0 011.3-1.3h2.4a1.3 1.3 0 011.3 1.3v1.7M6.5 6.5l.8 12.2a2 2 0 002 1.8h5.4a2 2 0 002-1.8l.8-12.2M10 10.5v6M14 10.5v6"/>',
+  undo:   '<path d="M8 5.5L4.5 9 8 12.5M4.5 9h9.25a5.75 5.75 0 110 11.5H9"/>',
+  refresh:'<path d="M20 12a8 8 0 11-2.4-5.7M20 3.5V8h-4.5"/>',
+  plus:   '<path d="M12 5v14M5 12h14"/>',
+  layers: '<path d="M12 3.5l8.5 4.7L12 12.9 3.5 8.2 12 3.5z"/><path d="M3.5 12.5l8.5 4.7 8.5-4.7"/><path d="M3.5 16.6l8.5 4.7 8.5-4.7"/>',
 };
 const ic = (name, cls='') => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]||ICONS.star}</svg>`;
 
@@ -109,47 +113,48 @@ function applyBlockPalette(key, colors, customHexes){
     else c.customHex = bp.hex[i%6];
   });
 }
-/* chips config — target stepper + explicit "earned before full" toggle with a typed threshold */
+/* "throughout the day" setup — real quantities, in the user's own unit.
+   Example: calories → total 2000, block 1000, small chunk 250. */
 function chipConfigHTML(chips){
   if(!chips) return '';
-  const early = chips.countsAt < chips.target;
+  const cfg = chunkCfg(chips);
+  const u = cfg.unit ? esc(cfg.unit) : 'times';
+  const blocksPerDay = Math.floor(cfg.perDay/cfg.perBlock);
+  const inp = 'border:none;background:var(--surface);border-radius:10px;padding:9px 12px;font:inherit;font-size:15px;color:var(--ink);width:100%;text-align:center';
   return `<div class="chip-config">
-    <div><label>Chips per day</label><div class="stepper"><button data-f="t-">−</button><span class="val">${chips.target}</span><button data-f="t+">＋</button></div></div>
-    <div class="chips-toggle" style="margin-top:9px">
-      <label class="switch"><input type="checkbox" data-f="early" ${early?'checked':''}><span class="knob"></span></label>
-      <span>Block earned <strong>before</strong> all chips are in</span>
+    <div class="cc-row"><label>What are you counting?</label>
+      <input type="text" data-f="unit" value="${esc(chips.unit||'')}" placeholder="calories, glasses, minutes…" maxlength="18"
+        style="${inp};text-align:left"></div>
+    <div class="cc-grid">
+      <div><label>Daily total</label><input type="number" data-f="total" inputmode="numeric" min="1" value="${cfg.total}" style="${inp}"></div>
+      <div><label>A block =</label><input type="number" data-f="block" inputmode="numeric" min="1" value="${cfg.block}" style="${inp}"></div>
+      <div><label>Small chunk =</label><input type="number" data-f="chunk" inputmode="numeric" min="1" value="${cfg.chunk}" style="${inp}"></div>
     </div>
-    ${early?`<div style="display:flex;align-items:center;gap:10px;margin-top:9px">
-      <label style="font-size:12.5px;color:var(--muted)">Earned at</label>
-      <input type="number" data-f="countsAt" inputmode="numeric" min="1" max="${chips.target}" value="${chips.countsAt}"
-        style="width:72px;border:none;background:var(--surface);border-radius:10px;padding:9px 12px;font:inherit;font-size:15px;color:var(--ink);text-align:center">
-      <span style="font-size:12.5px;color:var(--muted)">of ${chips.target} chips</span>
-    </div>`:''}
+    <div class="cc-sum">${cfg.perDay}&nbsp;small&nbsp;chunk${cfg.perDay>1?'s':''} of ${cfg.chunk}&nbsp;${u} a&nbsp;day · a block fills every&nbsp;${cfg.perBlock}${blocksPerDay>1?` · up to ${blocksPerDay}&nbsp;blocks&nbsp;a&nbsp;day`:''}</div>
   </div>`;
 }
 function bindChipConfig(card, getChips, upd){
   const chips = getChips(); if(!chips) return;
-  card.querySelector('[data-f="t-"]')?.addEventListener('click',()=>{
-    const wasFull = chips.countsAt >= chips.target;
-    chips.target = clamp(chips.target-1,2,30);
-    chips.countsAt = wasFull ? chips.target : Math.min(chips.countsAt, chips.target);
-    upd();
-  });
-  card.querySelector('[data-f="t+"]')?.addEventListener('click',()=>{
-    const wasFull = chips.countsAt >= chips.target;
-    chips.target = clamp(chips.target+1,2,30);
-    if(wasFull) chips.countsAt = chips.target;
-    upd();
-  });
-  card.querySelector('[data-f="early"]')?.addEventListener('change', e=>{
-    chips.countsAt = e.target.checked ? Math.max(1, chips.target-1) : chips.target;
-    upd(true);
-  });
-  const inp = card.querySelector('[data-f="countsAt"]');
-  inp?.addEventListener('change', e=>{
-    chips.countsAt = clamp(Math.round(+e.target.value||1), 1, chips.target);
-    upd();
-  });
+  // editing always lands in the quantity shape (converts old saves on first touch)
+  const modern = ()=>{
+    if(chips.total===undefined){
+      const c0 = chunkCfg(chips);
+      chips.unit = c0.unit; chips.total = c0.total; chips.chunk = c0.chunk; chips.block = c0.block;
+      delete chips.target; delete chips.countsAt;
+    }
+    return chips;
+  };
+  card.querySelector('[data-f="unit"]')?.addEventListener('change', e=>{ modern().unit = e.target.value.trim(); upd(); });
+  for(const f of ['total','block','chunk']){
+    card.querySelector(`[data-f="${f}"]`)?.addEventListener('change', e=>{
+      const m = modern();
+      m[f] = Math.max(1, Math.round(+e.target.value)||1);
+      // keep it coherent: chunk ≤ block ≤ total
+      m.chunk = Math.max(1, Math.min(m.chunk, m.total));
+      m.block = Math.min(m.total, Math.max(m.chunk, m.block));
+      upd();
+    });
+  }
 }
 function savedCardHTML(sp, on){
   return `<button class="pal-card ${on?'on':''}" data-bp="saved:${sp.id}">
@@ -254,7 +259,7 @@ const STARTERS = [
   {name:'Move',      icon:'dumbbell',   pal:'gentlemist',   goal:3, slots:2},
   {name:'Meal Prep', icon:'utensils',   pal:'dreamysand',  goal:2, slots:1},
   {name:'Social',    icon:'smile',      pal:'goldenglow',  goal:2, slots:3},
-  {name:'Water',     icon:'droplet',    pal:'cloudyhaze',   goal:7, slots:1, chips:{target:8, countsAt:8}},
+  {name:'Water',     icon:'droplet',    pal:'cloudyhaze',   goal:7, slots:1, chips:{unit:'glasses', total:8, chunk:1, block:8}},
   {name:'Deep Work', icon:'brain',      pal:'softhoney',   goal:4, slots:2},
   {name:'Family',    icon:'heart',      pal:'peachwhisper',       goal:2, slots:1},
   {name:'Rest',      icon:'moon',       pal:'cloudyhaze', goal:3, slots:1},
@@ -291,6 +296,9 @@ const VOICES = {
     allDone:'All blocks placed.',
     empty:'No blocks configured. Open Settings.',
     perfect:'Goal met: all blocks placed.',
+    goodnight:'Day closed.',
+    nightIntro:'End of day. Tap each block that happened today.',
+    newDay:'Yesterday’s board is still out. Starting fresh reviews what’s left.',
   },
   zesty: {
     label:'Zesty', heat:'DEFAULT · A LITTLE CHEEK', sample:'KACHUNK. That’s the sound of you actually doing the thing.',
@@ -301,7 +309,7 @@ const VOICES = {
     toss:['Wheee.','Very productive. Do it again.','Physics: free. Guilt: none.'],
     entry:(n)=>n>1?`${n} blocks, kachunked in bulk. Efficient.`:`One block, kachunked. Efficient.`,
     chipDone:'That counts as a whole block. In it goes. KACHUNK.',
-    chipTick:'Chip. Keep ’em coming.',
+    chipTick:'Small chunk in. Keep ’em coming.',
     ruIntro:(n)=>`Roundup time. ${n} block${n>1?'s are':' is'} still wandering the floor. Let’s ask them some questions.`,
     ruDid:(c)=>`Be honest — did ${c} happen?`,
     ruYes:'It happened ✓', ruNo:'Not this week',
@@ -316,6 +324,9 @@ const VOICES = {
     allDone:'Every block bucketed. Absolute legend behavior.',
     empty:'No blocks yet. Hit Settings and give yourself something to drop.',
     perfect:'Full bucket. FULL. BUCKET.',
+    goodnight:'Day banked. Goodnight.',
+    nightIntro:'Goodnight roundup — tap every block that actually happened today. Then bed.',
+    newDay:'New day, fresh floor. Yesterday’s blocks want a word before they move on.',
   },
   spicy: {
     label:'Extra Spicy', heat:'ROAST ME', sample:'Oh look who finally did a thing. The bucket nearly forgot you.',
@@ -326,7 +337,7 @@ const VOICES = {
     toss:['Yes, very busy, much productive.','That block has done nothing wrong and yet.','Play time won’t fill buckets, chief.'],
     entry:(n)=>n>1?`${n} at once? Suspicious. Recorded anyway.`:`One. Recorded. Baby steps.`,
     chipDone:'Fine, that’s a real block. Credit where due.',
-    chipTick:'A chip. Riveting. Keep going.',
+    chipTick:'A small chunk. Riveting. Keep going.',
     ruIntro:(n)=>`Roundup. ${n} block${n>1?'s':''} just sitting there. Explain yourself.`,
     ruDid:(c)=>`${c}. Did it happen or are we lying to a habit app now?`,
     ruYes:'It happened, relax', ruNo:'No. Moving on.',
@@ -341,9 +352,12 @@ const VOICES = {
     allDone:'All bucketed?? Who ARE you.',
     empty:'Zero blocks. Bold strategy. Settings is that way.',
     perfect:'Perfect week. I have literally nothing to roast. Unsettling.',
+    goodnight:'Done. Go to bed.',
+    nightIntro:'Day’s over. Tap what ACTUALLY happened. No embellishing.',
+    newDay:'It’s tomorrow. It has been for a while. Deal with yesterday?',
   },
   sugar: {
-    label:'Sugar Rush', heat:'MAXIMUM POMPOMS', sample:'YESSS! Another block in the bucket!! You’re UNSTOPPABLE!!',
+    label:'Be Kind', heat:'MAXIMUM POMPOMS', sample:'YESSS! Another block in the bucket!! You’re UNSTOPPABLE!!',
     tagline:'Every block you drop is a little victory parade! 🎉',
     hint:'Did the thing? Drop that gorgeous block in its bucket!! Or toss one around — you’ve earned playtime!',
     drop:['YES!! KACHUNK!!','You DID that!','Bucket: fed. You: incredible.','Another one!! I’m so proud!!','That’s my favorite sound!!'],
@@ -351,7 +365,7 @@ const VOICES = {
     toss:['WHEEE!!','Block airlines, now boarding!!','Joy is productive too!!'],
     entry:(n)=>n>1?`${n} WHOLE BLOCKS?! Superstar!!`:`A WHOLE BLOCK!! Superstar!!`,
     chipDone:'DING DING! That’s a full block, superstar!!',
-    chipTick:'Chip!! Every sip counts!!',
+    chipTick:'Small chunk!! Every little bit counts!!',
     ruIntro:(n)=>`Roundup party!! ${n} little block${n>1?'s':''} to check in on. You’re doing amazing!`,
     ruDid:(c)=>`Did wonderful ${c} happen this week?!`,
     ruYes:'YES it did!!', ruNo:'Not this time (still love you)',
@@ -366,6 +380,9 @@ const VOICES = {
     allDone:'EVERY BLOCK IS HOME!! I’m crying!!',
     empty:'No blocks yet — let’s make some magic in Settings!!',
     perfect:'PERFECT WEEK!! Confetti forever!!',
+    goodnight:'Goodnight, superstar!! 🌙',
+    nightIntro:'Goodnight roundup!! Tap every block you did today — then sweet dreams!!',
+    newDay:'A brand new day!! Let’s tuck yesterday in and start fresh!!',
   },
 };
 
@@ -384,7 +401,7 @@ function demoState(){
     mk('Water','droplet','#DFC289',7,1), mk('Rest','moon','#7E9B95',3,1), mk('Create','palette','#C98D7E',4,1),
   ];
   s.colors = cols;
-  s.buckets = cols.map(c=>({id:uid(), colorId:c.id, name:c.name, notes:'', chips: c.name==='Water'?{target:8,countsAt:8}:null}));
+  s.buckets = cols.map(c=>({id:uid(), colorId:c.id, name:c.name, notes:'', chips: c.name==='Water'?{unit:'glasses', total:8, chunk:1, block:8}:null}));
   s.settings.userName = 'Sam'; s.settings.blockPal = 'brand'; s.onboarded = true;
   // this week, mid-flight: start 3 days ago, ~half the blocks banked with spread timestamps
   s.week = {start:new Date(now-3*day).toISOString(), blocks:[], chips:{}};
@@ -416,9 +433,9 @@ function demoState(){
 function defaults(){
   return {
     version:1, onboarded:false,
-    settings:{voice:'zesty', roundupTime:'20:30', sound:true, theme:'dark', weekStartsOn:1, notifAsked:false},
+    settings:{voice:'zesty', roundupTime:'20:30', sound:true, theme:'dark', weekStartsOn:1, notifAsked:false, planTomorrow:false},
     colors:[],   // {id,name,icon,pal,shape,goal}
-    buckets:[],  // {id,colorId,name,notes,chips:null|{target,countsAt}}
+    buckets:[],  // {id,colorId,name,notes,chips:null|{unit,total,chunk,block}} (legacy saves: {target,countsAt})
     week:{start:null, blocks:[], chips:{}}, // blocks: {id,colorId,status,via,ts} chips: {bucketId:{'YYYY-MM-DD':n}}
     nextGoals:{}, history:[], lastRoundup:null,
     day:{date:null, mode:'grid', startMin:480, endMin:1320, slotMin:30, maxSlots:8, items:[], icalUrl:'', ical:[]}, // Day Builder: temporary plan, never reported
@@ -464,9 +481,29 @@ function droppedCount(colorId){ return S.week.blocks.filter(b=>b.colorId===color
 function partialCount(colorId){
   const bucket = S.buckets.find(b=>b.colorId===colorId);
   if(!bucket || !bucket.chips) return 0;
+  const cfg = chunkCfg(bucket.chips);
   const days = S.week.chips[bucket.id] || {};
-  return Object.values(days).filter(n=>n>0 && n<bucket.chips.countsAt).length;
+  return Object.values(days).filter(n=>n>0 && n<cfg.perBlock).length;
 }
+
+/* ── "small chunks" (chips) config — normalize either shape:
+   new  {unit,total,chunk,block}: real quantities, e.g. 2000 cal · chunk 250 · block 1000
+   old  {target,countsAt}: N chunks a day, block at countsAt (pre-2026-07-17 saves)
+   Derived: perDay = chunks per day, perBlock = chunks that fill one block. ── */
+function chunkCfg(chips){
+  if(!chips) return null;
+  if(chips.total!==undefined){
+    const chunk = Math.max(1, Math.round(+chips.chunk)||1);
+    const total = Math.max(chunk, Math.round(+chips.total)||chunk);
+    const block = Math.min(total, Math.max(chunk, Math.round(+chips.block)||total));
+    return {unit:String(chips.unit||'').trim(), total, chunk, block,
+      perDay: Math.max(1, Math.round(total/chunk)), perBlock: Math.max(1, Math.round(block/chunk))};
+  }
+  const perDay = Math.max(1, +chips.target||8);
+  const perBlock = Math.max(1, Math.min(perDay, +chips.countsAt||perDay));
+  return {unit:'', total:perDay, chunk:1, block:perBlock, perDay, perBlock};
+}
+const freshChunks = () => ({unit:'', total:8, chunk:1, block:8}); // default: 8 little reps = the day's block
 
 /* ── sounds (WebAudio synth — no files) ── */
 let AC = null;
@@ -566,6 +603,82 @@ const Sheet = {
   }
 };
 
+/* ═════════ UNDO — last recorded rep, popped off a small stack ═════════ */
+const Undo = {
+  stack:[],
+  push(e){ this.stack.push(e); if(this.stack.length>40) this.stack.shift(); },
+  clear(){ this.stack.length = 0; },
+  pop(){
+    while(this.stack.length){
+      const e = this.stack.pop();
+      if(e.type==='drop'){
+        const block = S.week.blocks.find(b=>b.id===e.blockId);
+        if(!block || block.status!=='dropped') continue; // stale (restacked / already undone) — try next
+        Floor.undoDrop(e.blockId);
+        const it = DayB.items().find(i=>i.blockId===e.blockId); if(it) it.done = false;
+        S.day.celebrated = false; save();
+        toast('Undone — block’s back on the floor.');
+        return;
+      }
+      if(e.type==='chip'){
+        const cur = (S.week.chips[e.bucketId]||{})[e.day]||0;
+        if(!cur && !e.parentId) continue;
+        if(cur) S.week.chips[e.bucketId][e.day] = cur-1;
+        if(e.parentId){
+          const p = S.week.blocks.find(b=>b.id===e.parentId);
+          if(p && p.status==='dropped'){ p.status='tray'; p.via=null; p.ts=null; }
+          const it = DayB.items().find(i=>i.blockId===e.parentId); if(it) it.done = false;
+          S.day.celebrated = false;
+        }
+        save(); Floor.rebuild(); sfx('tick');
+        toast('Small chunk undone.');
+        return;
+      }
+    }
+    toast('Nothing to undo.');
+  }
+};
+
+/* ═════════ FULL-SCREEN CELEBRATION — confetti storm + the word (still no message boxes) ═════════ */
+const Celebrate = {
+  run(sub=''){
+    if($('#celebrate')) return;
+    const el = document.createElement('div'); el.id = 'celebrate'; el.className = 'celebrate';
+    el.innerHTML = `<canvas></canvas><div class="cb-word">KACHUNK<span>.</span></div>${sub?`<div class="cb-sub">${esc(sub)}</div>`:''}`;
+    document.body.appendChild(el);
+    const cv = el.querySelector('canvas'); const x = cv.getContext('2d');
+    const dpr = Math.min(window.devicePixelRatio||1, 2);
+    const W = cv.width = innerWidth*dpr, H = cv.height = innerHeight*dpr;
+    const pals = S.colors.length ? S.colors.map(c=>palFor(c)) : [{fill:'#DD7C54',light:'#F4C7BA',edge:'#B95F3D'}];
+    const cols = pals.flatMap(p=>[p.fill,p.light,p.edge]).concat(['#DD7C54','#DFC289','#FFFFFF']);
+    const ps = [];
+    for(let i=0;i<170;i++) ps.push({
+      x:Math.random()*W, y:-Math.random()*H*0.6, vx:(Math.random()-.5)*2.4*dpr, vy:(2+Math.random()*4.5)*dpr,
+      s:(3+Math.random()*6.5)*dpr, rot:Math.random()*6.3, vr:(Math.random()-.5)*0.32,
+      color:cols[Math.floor(Math.random()*cols.length)], shape:Math.random()<.3?'dot':'rect'});
+    const t0 = performance.now();
+    sfx('fanfare'); buzz(40);
+    let dead = false;
+    const kill = ()=>{ dead = true; el.remove(); };
+    el.onpointerdown = kill; // tap to skip
+    const tick = now=>{
+      if(dead) return;
+      const t = (now-t0)/1000;
+      x.clearRect(0,0,W,H);
+      for(const p of ps){
+        p.x += p.vx; p.y += p.vy; p.vy += 0.05*dpr; p.rot += p.vr;
+        x.save(); x.translate(p.x,p.y); x.rotate(p.rot);
+        x.globalAlpha = clamp(2.8-t, 0, 1); x.fillStyle = p.color;
+        if(p.shape==='dot'){ x.beginPath(); x.arc(0,0,p.s/2,0,6.3); x.fill(); }
+        else x.fillRect(-p.s/2, -p.s*0.35, p.s, p.s*0.7);
+        x.restore();
+      }
+      if(t<2.7) requestAnimationFrame(tick); else kill();
+    };
+    requestAnimationFrame(tick);
+  }
+};
+
 /* ═════════ ONBOARDING ═════════ */
 const OB = {
   step:0,
@@ -620,7 +733,7 @@ const OB = {
         const st = STARTERS.find(x=>x.name===ch.dataset.starter);
         const has = d.colors.findIndex(c=>c.starter===st.name);
         if(has>=0) d.colors.splice(has,1);
-        else if(d.colors.length<6) d.colors.push({id:uid(), name:st.name, icon:st.icon, pal:st.pal, shape:'cube', goal:st.goal, slots:st.slots||1, chips:st.chips||null, starter:st.name});
+        else if(d.colors.length<6) d.colors.push({id:uid(), name:st.name, icon:st.icon, pal:st.pal, shape:'cube', goal:st.goal, slots:st.slots||1, chips:st.chips?{...st.chips}:null, starter:st.name});
         else return toast('Six buckets max — keep it holdable.');
         this.render();
       });
@@ -669,23 +782,33 @@ const OB = {
           <div class="bc-head"><button class="swatch" data-f="look" style="background:${p.fill};border-color:${p.edge};--swk:${iconInkFor(c, p.fill)}" title="Change look">${ic(c.icon)}</button>
             <input type="text" data-f="bname" value="${esc(c.name)}" aria-label="Bucket name" style="font-weight:700;font-size:17px">
           </div>
-          <div class="be-lab">Weekly goal<span>Blocks per week.</span></div>
+          <div class="be-lab">How does ${esc(c.name)} happen?</div>
+          <div class="mode-pick">
+            <button type="button" class="mode-card ${!c.chips?'on':''}" data-mode="chunk">
+              <strong>In chunks</strong>
+              <span>One outing, one block —<br>the gym, or coffee<br>with a friend.</span>
+            </button>
+            <button type="button" class="mode-card ${c.chips?'on':''}" data-mode="allday">
+              <strong>Throughout<br>the day</strong>
+              <span>Small chunks that<br>add up — calories,<br>water, gratitude.</span>
+            </button>
+          </div>
+          ${chipConfigHTML(c.chips)}
+          <div class="be-lab">Blocks per week<span>${c.chips?'How many days do you want to track this habit during the&nbsp;week?':'How many times a week do you want to complete a&nbsp;block?'}</span></div>
           <div class="stepper"><button data-f="g-">−</button><span class="val">${c.goal}</span><button data-f="g+">＋</button></div>
-          <div class="be-lab">Brick size<span>Scales with how long it takes to complete.</span></div>
+          <div class="be-lab">Block size<span>Scales with how long it takes to complete.</span></div>
           <div class="stepper"><button data-f="s-">−</button><span class="val">${c.slots||1} slot${(c.slots||1)>1?'s':''}</span><button data-f="s+">＋</button></div>
           <div class="bc-label">Notes</div>
           <textarea data-f="notes" placeholder="e.g. 3× = 2 swim + 1 yoga">${esc(c.notes||'')}</textarea>
-          <div class="chips-toggle">
-            <label class="switch"><input type="checkbox" data-f="chips" ${c.chips?'checked':''}><span class="knob"></span></label>
-            <span>Count in <strong>chips</strong> (several small reps = one block)</span>
-          </div>
-          ${chipConfigHTML(c.chips)}
         </div>`;
       const card = $('#obBody .bucket-card');
       card.querySelector('[data-f=look]').onclick = ()=>openColorPicker(c, ()=>this.render());
       card.querySelector('[data-f=bname]').oninput = e=>{ c.name = e.target.value; c.bucketName = e.target.value; };
       card.querySelector('[data-f=notes]').oninput = e=>c.notes = e.target.value;
-      card.querySelector('[data-f=chips]').onchange = e=>{ c.chips = e.target.checked?{target:8,countsAt:8}:null; this.render(); };
+      card.querySelectorAll('.mode-card').forEach(btn=>btn.onclick = ()=>{
+        c.chips = btn.dataset.mode==='allday' ? (c.chips||freshChunks()) : null;
+        this.render();
+      });
       const upd = ()=>this.render();
       card.querySelector('[data-f="g-"]').onclick = ()=>{ c.goal = clamp(c.goal-1,1,14); upd(); };
       card.querySelector('[data-f="g+"]').onclick = ()=>{ c.goal = clamp(c.goal+1,1,14); upd(); };
@@ -806,9 +929,21 @@ function openBucketEditor(c, opts={}){
         <input type="text" id="beName" value="${esc(c.name)}" aria-label="Bucket name"
           style="flex:1;min-width:0;border:none;background:var(--inset);border-radius:12px;padding:12px 14px;font:inherit;font-weight:700;font-size:17px;color:var(--ink)">
       </div>
-      <div class="be-lab">Weekly goal<span>Blocks per week.${isDraft?'':' Changes land when you restack.'}</span></div>
+      ${chipsHost ? `<div class="be-lab">How does it happen?</div>
+      <div class="mode-pick">
+        <button type="button" class="mode-card ${!chipsHost.chips?'on':''}" data-mode="chunk">
+          <strong>In chunks</strong>
+          <span>One outing, one block —<br>the gym, or coffee<br>with a friend.</span>
+        </button>
+        <button type="button" class="mode-card ${chipsHost.chips?'on':''}" data-mode="allday">
+          <strong>Throughout<br>the day</strong>
+          <span>Small chunks that<br>add up — calories,<br>water, gratitude.</span>
+        </button>
+      </div>
+      <div id="beChipCfg">${chipConfigHTML(chipsHost.chips)}</div>` : ''}
+      <div class="be-lab">Blocks per week<span>${(chipsHost&&chipsHost.chips)?'How many days do you want to track this habit during the&nbsp;week?':'How many times a week do you want to complete a&nbsp;block?'}${isDraft?'':' Changes land when you restack.'}</span></div>
       <div class="stepper"><button id="beGm">−</button><span class="val" id="beGV">${goal}</span><button id="beGp">＋</button></div>
-      <div class="be-lab">Brick size<span>Scales with how long it takes to complete.</span></div>
+      <div class="be-lab">Block size<span>Scales with how long it takes to complete.</span></div>
       <div class="stepper"><button id="beSm">−</button><span class="val" id="beSV">${slots} slot${slots>1?'s':''}</span><button id="beSp">＋</button></div>
       <div class="be-lab">Icon color</div>
       <div class="seg segsw" id="beInk">
@@ -816,12 +951,6 @@ function openBucketEditor(c, opts={}){
         <button data-k="ink" class="${c.iconInk==='ink'?'on':''}" aria-label="Ink" title="Ink"><i style="background:#33414D;box-shadow:inset 0 0 0 1px var(--hairline)"></i></button>
         <button data-k="paper" class="${c.iconInk==='paper'?'on':''}" aria-label="Paper" title="Paper"><i style="background:#FDFBF7;box-shadow:inset 0 0 0 1px var(--hairline)"></i></button>
       </div>
-      ${chipsHost ? `<div class="be-lab">Chips mode<span>Several small reps add up to one block.</span></div>
-      <div class="chips-toggle" style="margin-top:2px">
-        <label class="switch"><input type="checkbox" id="beChips" ${chipsHost.chips?'checked':''}><span class="knob"></span></label>
-        <span>${chipsHost.chips?'On':'Off'}</span>
-      </div>
-      <div id="beChipCfg">${chipConfigHTML(chipsHost.chips)}</div>` : ''}
       <div class="be-lab">Notes</div>
       <textarea id="beNotes" placeholder="e.g. 3× = 2 swim + 1 yoga" style="width:100%;border:none;background:var(--inset);border-radius:12px;padding:11px 13px;font:inherit;font-size:14.5px;color:var(--ink);min-height:64px">${esc((isDraft?c.notes:bk&&bk.notes)||'')}</textarea>
       <div class="sheet-actions" style="margin-top:16px">
@@ -844,7 +973,10 @@ function openBucketEditor(c, opts={}){
       commit(); render();
     });
     if(chipsHost){
-      $('#beChips').onchange = e=>{ chipsHost.chips = e.target.checked?{target:8,countsAt:8}:null; commit(); render(); };
+      $$('#sheet .mode-card').forEach(btn=>btn.onclick = ()=>{
+        chipsHost.chips = btn.dataset.mode==='allday' ? (chipsHost.chips||freshChunks()) : null;
+        commit(); render();
+      });
       bindChipConfig($('#sheet'), ()=>chipsHost.chips, ()=>{ commit(); render(); });
     }
     $('#beNotes').onchange = e=>{ if(isDraft) c.notes = e.target.value; if(bk) bk.notes = e.target.value; commit(); };
@@ -1510,6 +1642,7 @@ const Floor = {
   capture(block, body, bucket, via){
     if(body){ Matter.World.remove(this.engine.world, body); this.bodies.delete(block.id); }
     block.status='dropped'; block.via=via; block.ts=new Date().toISOString();
+    Undo.push({type:'drop', blockId:block.id});
     DayB.markDone(block.id); // banked planned blocks keep counting toward today
     save();
     sfx('drop'); buzz(18);
@@ -1519,11 +1652,12 @@ const Floor = {
     if(r) this.burst(r.x+r.w/2, r.y+18, pal, true);
     this.syncBuckets(); this.updateHeader();
     if(!S.week.blocks.some(b=>b.status!=='dropped')){
-      // every block home: confetti across every bucket
+      // every block home: confetti across every bucket, then the full-screen storm
       setTimeout(()=>{ this.bucketRects.forEach((br,k)=>{
         const c = S.colors.find(x=>x.id===S.buckets[k].colorId);
         this.burst(br.x+br.w/2, br.y+14, palFor(c||{}), true);
-      }); sfx('fanfare'); }, 420);
+      }); }, 420);
+      setTimeout(()=>Celebrate.run(V().allDone), 560);
     }
   },
 
@@ -1550,6 +1684,7 @@ const Floor = {
         pal:palFor(c), shape:c.shape, icon:c.icon, ink:iconInkFor(c, palFor(c).fill), label:c.name, size:this.sizeFor(colorId)*0.9,
         done:()=>{
           block.status='dropped'; block.via=via; block.ts=new Date().toISOString();
+          Undo.push({type:'drop', blockId:block.id});
           DayB.markDone(block.id);
           save();
           sfx('drop'); buzz(10); this.syncBuckets(); this.updateHeader();
@@ -1568,22 +1703,44 @@ const Floor = {
     sfx('toss'); buzz(24);
   },
 
-  /* ── week sweep, on the board ── */
-  enterSweep(){
+  /* ── sweeps, on the board: 'week' (end of week) and 'day' (goodnight roundup) ── */
+  sweepKind:'week',
+  enterSweep(kind='week'){
+    this.sweepKind = kind;
     S.lastRoundup = new Date().toISOString(); save();
     this.rejoinAllChips(); // loose chips regroup before the sweep
     this.sweepMode = true;
     $('#btnRoundup').hidden = true;
+    $('#screen-floor').classList.add('board-live');
     const pop = $('#sweepPop'); pop.hidden = false;
+    const strong = pop.querySelector('strong');
+    if(strong) strong.textContent = kind==='day' ? 'Goodnight.' : 'Week sweep.';
+    $('#spRestack').hidden = (kind==='day');
     this.updateSweepPop();
   },
-  exitSweep(){ this.sweepMode = false; $('#sweepPop').hidden = true; this.updateHeader(); },
+  exitSweep(){
+    this.sweepMode = false; $('#sweepPop').hidden = true;
+    $('#screen-floor').classList.remove('board-live');
+    this.updateHeader();
+  },
+  closeSweep(){ // the ✕ — in goodnight mode this IS "end my day"
+    const wasDay = this.sweepMode && this.sweepKind==='day';
+    this.exitSweep();
+    if(wasDay) toast(V().goodnight || 'Goodnight.', {ms:2800});
+  },
   updateSweepPop(){
     const left = S.week.blocks.filter(b=>b.status!=='dropped').length;
     const msg = $('#spMsg');
-    if(msg) msg.textContent = left
-      ? `Tap every block that actually happened — it drops home. ${left} out, and faded is fine.`
-      : `All claimed. Restack when you're ready.`;
+    if(!msg) return;
+    if(this.sweepKind==='day'){
+      msg.textContent = left
+        ? `${V().nightIntro || 'Tap each block that happened today.'} Close when you’re done.`
+        : `Everything’s home. Close it out and sleep well.`;
+    } else {
+      msg.textContent = left
+        ? `Tap every block that actually happened — it drops home. ${left} out, and faded is fine.`
+        : `All claimed. Restack when you're ready.`;
+    }
   },
   claimBlock(body){
     const block = S.week.blocks.find(b=>b.id===body.blockId); if(!block) return;
@@ -1597,10 +1754,14 @@ const Floor = {
       pal:palFor(c), shape:c.shape, icon:c.icon, ink:iconInkFor(c, palFor(c).fill), size:this.sizeFor(c.id)*0.9,
       done:()=>{
         block.status='dropped'; block.via='sweep'; block.ts=new Date().toISOString();
+        Undo.push({type:'drop', blockId:block.id});
         DayB.markDone(block.id); save();
         sfx('drop'); buzz(12);
         this.burst(r.x+r.w/2, r.y+22, palFor(c));
         this.syncBuckets(); this.updateHeader(); this.updateSweepPop();
+        // last block claimed during the week sweep → the big one
+        if(this.sweepMode && this.sweepKind==='week' && !S.week.blocks.some(b=>b.status!=='dropped'))
+          setTimeout(()=>Celebrate.run(V().allDone), 320);
       }});
   },
   restackWeek(){
@@ -1612,14 +1773,16 @@ const Floor = {
     if(S.history.length>52) S.history.length = 52;
     S.day.items = []; S.day.date = null;
     S.settings.sweepDismissed = null;
+    Undo.clear(); // the old week's reps are history now — nothing on the new board to undo
     spawnWeek(); this.exitSweep(); this.rebuild();
     sfx('fanfare'); toast(V().restacked, {ms:3000});
   },
 
   /* ── chips-mode blocks are physical too: shatter on plan, regroup on the way back ── */
   shatterToChips(block, body, bucket){
+    const cfg = chunkCfg(bucket.chips);
     const banked = (S.week.chips[bucket.id]||{})[dayKey()]||0;
-    const n = clamp(bucket.chips.target - banked, 1, bucket.chips.target); // only what's left today
+    const n = clamp(cfg.perDay - banked, 1, Math.min(cfg.perDay, 24)); // only what's left today (visual cap 24)
     const px = clamp(body.position.x, 40, this.W-40);
     const py = clamp(Math.max(body.position.y, this.planY()+70), this.planY()+60, this.floorY()-40);
     Matter.World.remove(this.engine.world, body); this.bodies.delete(block.id);
@@ -1689,37 +1852,42 @@ const Floor = {
   },
   bankChip(body, bucket){
     Matter.World.remove(this.engine.world, body); this.bodies.delete(body.blockId);
+    const cfg = chunkCfg(bucket.chips);
     S.week.chips[bucket.id] = S.week.chips[bucket.id]||{};
     const today = S.week.chips[bucket.id][dayKey()]||0;
-    if(today >= bucket.chips.target){ sfx('tick'); this.updateHeader(); return; }
+    if(today >= cfg.perDay){ sfx('tick'); this.updateHeader(); return; }
     S.week.chips[bucket.id][dayKey()] = today+1; save();
     const i = S.buckets.indexOf(bucket);
     const r = this.bucketRects[i];
     const pal = palFor(S.colors.find(c=>c.id===bucket.colorId)||{});
     sfx('tick'); buzz(8);
-    if(today+1 === bucket.chips.countsAt){
-      // enough chips today → the shattered block is earned
+    let earnedParentId = null;
+    if((today+1) % cfg.perBlock === 0){
+      // enough small chunks → a block is earned (can happen more than once a day, e.g. 2000 cal / 1000-cal blocks)
       const parent = S.week.blocks.find(b=>b.id===body.chipParent && b.status!=='dropped')
         || S.week.blocks.find(b=>b.colorId===bucket.colorId && b.status!=='dropped');
       if(parent){
         parent.status='dropped'; parent.via='chips'; parent.ts=new Date().toISOString();
+        earnedParentId = parent.id;
         DayB.markDone(parent.id); save();
         if(r) this.burst(r.x+r.w/2, r.y+18, pal, true);
         sfx('drop'); buzz(18);
       }
-      this.fadeChips(body.chipParent); // threshold beaten — the rest melt away
+      if(today+1 >= cfg.perDay) this.fadeChips(body.chipParent); // day complete — leftovers pop away
     } else if(r) this.burst(r.x+r.w/2, r.y+22, pal);
+    Undo.push({type:'chip', bucketId:bucket.id, day:dayKey(), parentId:earnedParentId});
     this.syncBuckets(); this.updateHeader();
   },
 
-  /* today's whole plan banked → confetti rain along the divider + fanfare */
+  /* today's whole plan banked → full-screen confetti storm (D-16 amended: animation, still never a message box) */
   dayCelebrate(){
     const y = this.planY();
     const pals = S.colors.map(c=>palFor(c));
     [0.2,0.42,0.62,0.82].forEach((fx,k)=>{
       setTimeout(()=>this.burst(this.W*fx, y, pals[k%pals.length]||{fill:'#DD7C54',light:'#F4C7BA',edge:'#B95F3D'}, true), k*130);
     });
-    sfx('fanfare'); buzz(30); // celebration is physics + sound, never a message (D-16)
+    Celebrate.run(V().perfect);
+    buzz(30); // fanfare comes from Celebrate
   },
 
   burst(x,y,pal,big=false){
@@ -1747,7 +1915,7 @@ const Floor = {
     {
       // today: simple text — banked/scheduled, plus tomorrow's pre-plan when it exists
       const sched = DayB.used('today'), done = DayB.doneUnits(), tmrw = DayB.used('tomorrow');
-      const label = `TODAY ${done}/${sched||S.day.maxSlots}` + (tmrw ? `  ·  TMRW ${tmrw}/${S.day.maxSlots}` : '');
+      const label = `TODAY ${done}/${sched||S.day.maxSlots}` + (tmrw ? `  ·  TMRW ${tmrw}/${S.day.maxSlots}` : ''); // date lives in the ＋ entry modal, not here
       x.fillText(label, this.W-16, this.planY()+18);
     }
     x.strokeStyle = hair; x.lineWidth = 1.5; x.setLineDash([2,6]); x.lineCap='round';
@@ -1824,14 +1992,18 @@ const BucketSheet = {
       <h3><span style="display:inline-flex;width:30px;height:30px;border-radius:9px;background:${p.fill};border:2px solid ${p.edge};align-items:center;justify-content:center;vertical-align:-7px;margin-right:8px">${ic(c.icon)}</span>${esc(bk.name)}</h3>
       <p class="sh-sub mono">${done}/${c.goal} this week${left?` · ${left} on the floor`:''}</p>
       ${bk.notes?`<p style="font-size:14px;color:var(--text);background:var(--inset);border-radius:12px;padding:10px 12px">${esc(bk.notes)}</p>`:''}`;
+    const cfg = chunkCfg(bk.chips);
+    const chunkLabel = t => `Today's small chunks — ${t}/${cfg.perDay}`
+      + (cfg.unit ? ` · ${t*cfg.chunk} of ${cfg.total} ${esc(cfg.unit)}` : '')
+      + (cfg.perBlock<cfg.perDay ? ` · block every ${cfg.perBlock}` : '');
     if(bk.chips){
       const today = S.week.chips[bk.id]?.[dayKey()] || 0;
       html += `
-        <div class="bc-label">Today's chips — ${today}/${bk.chips.target} (block at ${bk.chips.countsAt})</div>
-        <div class="chip-tally">${Array.from({length:bk.chips.target},(_,k)=>`<div class="chip-cell ${k<today?'on':''}"></div>`).join('')}</div>
+        <div class="bc-label">${chunkLabel(today)}</div>
+        <div class="chip-tally">${Array.from({length:Math.min(cfg.perDay,32)},(_,k)=>`<div class="chip-cell ${k<today?'on':''}"></div>`).join('')}</div>
         <div class="sheet-actions">
-          <button class="btn btn-ghost" id="chipMinus">− chip</button>
-          <button class="btn btn-primary" id="chipPlus">＋ chip</button>
+          <button class="btn btn-ghost" id="chipMinus">− small chunk</button>
+          <button class="btn btn-primary" id="chipPlus">＋ small chunk</button>
         </div>
         <hr style="border:none;border-top:2px solid var(--hairline);margin:18px 0">`;
     }
@@ -1859,14 +2031,14 @@ const BucketSheet = {
       const paint = ()=>{
         const today = S.week.chips[bk.id]?.[dayKey()] || 0;
         $$('.chip-cell', $('#sheet')).forEach((el,k)=>el.classList.toggle('on', k<today));
-        $('.bc-label', $('#sheet')).textContent = `Today's chips — ${today}/${bk.chips.target} (block at ${bk.chips.countsAt})`;
+        $('.bc-label', $('#sheet')).innerHTML = chunkLabel(today);
       };
       $('#chipPlus').onclick = ()=>{
         S.week.chips[bk.id] = S.week.chips[bk.id]||{};
         const today = (S.week.chips[bk.id][dayKey()]||0);
-        if(today>=bk.chips.target) return;
+        if(today>=cfg.perDay) return;
         S.week.chips[bk.id][dayKey()] = today+1; save(); sfx('tick'); paint();
-        if(today+1===bk.chips.countsAt){
+        if((today+1) % cfg.perBlock === 0){
           const flew = Floor.flyIn(c.id, 1, 'chips');
           toast(flew?V().chipDone:V().chipTick);
         } else if(Math.random()<0.3) toast(V().chipTick,{ms:1200});
@@ -1882,7 +2054,121 @@ const BucketSheet = {
 };
 
 /* ═════════ ROUNDUP ═════════ */
-const Roundup = { start(){ Floor.enterSweep(); } };
+const Roundup = { start(){ Floor.enterSweep('week'); } };
+
+/* ═════════ RESET TODAY — undo the day's play/fake recordings, keep the week ═════════ */
+const DayReset = {
+  todayDrops(){ return S.week.blocks.filter(b=>b.status==='dropped' && b.ts && dayKey(new Date(b.ts))===dayKey()); },
+  todayChipBuckets(){ return Object.keys(S.week.chips||{}).filter(bid=>((S.week.chips[bid]||{})[dayKey()]||0) > 0); },
+  confirm(){
+    const drops = this.todayDrops().length, chips = this.todayChipBuckets().length;
+    if(!drops && !chips){ toast('Nothing recorded today — the board is already clean.'); return; }
+    const what = [drops?`${drops} block${drops>1?'s':''}`:null, chips?'today’s small chunks':null].filter(Boolean).join(' and ');
+    Sheet.open(`
+      <h3>Reset today?</h3>
+      <p class="sh-sub">Puts ${what} back on the floor, like today never got recorded. The rest of the week keeps its receipts. Been playing with the blocks? This is the eraser.</p>
+      <div class="sheet-actions" style="margin-top:14px">
+        <button class="btn btn-ghost" id="rdCancel" style="flex:1">Keep it</button>
+        <button class="btn-danger" id="rdGo" style="flex:1;padding:12px 16px">Reset today</button>
+      </div>`);
+    $('#rdCancel').onclick = ()=>Sheet.close();
+    $('#rdGo').onclick = ()=>{ Sheet.close(); this.run(); };
+  },
+  run(){
+    this.todayDrops().forEach(b=>{ b.status='tray'; b.via=null; b.ts=null; });
+    this.todayChipBuckets().forEach(bid=>{ delete S.week.chips[bid][dayKey()]; });
+    (S.day.items||[]).forEach(i=>{ i.done = false; });
+    S.day.celebrated = false;
+    Undo.clear(); save();
+    Floor.exitSweep(); Floor.rebuild(); sfx('toss'); buzz(16);
+    toast('Today’s recordings reset — blocks are back on the floor.');
+  }
+};
+
+/* ═════════ ADD ENTRY — count a rep after the fact, any day this week, no dragging ═════════ */
+const EntryLog = {
+  sel:null,
+  open(){ this.sel = dayKey(); this.render(); },
+  days(){
+    const out = [];
+    const start = new Date(S.week.start || new Date()); start.setHours(0,0,0,0);
+    const today = new Date(); today.setHours(0,0,0,0);
+    for(const d = new Date(start); d <= today; d.setDate(d.getDate()+1)) out.push(dayKey(d));
+    return out.length ? out : [dayKey()];
+  },
+  fmt(day){ return new Date(day+'T12:00:00').toLocaleDateString('en-US',{weekday:'short', month:'short', day:'numeric'}); },
+  countFor(colorId, day){
+    return S.week.blocks.filter(b=>b.colorId===colorId && b.status==='dropped' && b.ts && dayKey(new Date(b.ts))===day).length;
+  },
+  add(colorId){
+    const block = trayBlocks(colorId)[0];
+    if(!block){ toast('No blocks left for that bucket this week.'); return; }
+    const isToday = this.sel===dayKey();
+    block.status='dropped'; block.via='manual';
+    block.ts = isToday ? new Date().toISOString() : new Date(this.sel+'T12:00:00').toISOString();
+    Undo.push({type:'drop', blockId:block.id});
+    if(isToday) DayB.markDone(block.id);
+    save(); sfx('drop'); buzz(10);
+    this.render(); Floor.syncBuckets(); Floor.updateHeader();
+  },
+  remove(colorId){
+    const cand = S.week.blocks
+      .filter(b=>b.colorId===colorId && b.status==='dropped' && b.ts && dayKey(new Date(b.ts))===this.sel)
+      .sort((a,b)=>a.ts<b.ts?1:-1)[0];
+    if(!cand) return;
+    cand.status='tray'; cand.via=null; cand.ts=null;
+    const it = DayB.items().find(i=>i.blockId===cand.id); if(it) it.done = false;
+    S.day.celebrated = false;
+    save(); sfx('tick');
+    this.render(); Floor.syncBuckets(); Floor.updateHeader();
+  },
+  render(){
+    const days = this.days();
+    let i = days.indexOf(this.sel); if(i<0){ i = days.length-1; this.sel = days[i]; }
+    const isToday = this.sel===dayKey();
+    const rows = S.colors.map(c=>{
+      const p = palFor(c); const n = this.countFor(c.id, this.sel); const left = trayBlocks(c.id).length;
+      const bk = S.buckets.find(b=>b.colorId===c.id);
+      return `<div class="el-row">
+        <span class="swatch" style="background:${p.fill};border-color:${p.edge};--swk:${iconInkFor(c,p.fill)}">${ic(c.icon)}</span>
+        <span class="el-name">${esc(c.name)}${bk&&bk.chips?'<i class="el-chip-hint">small chunks count on the bucket — this logs whole blocks</i>':''}</span>
+        <div class="stepper"><button data-minus="${c.id}" ${n?'':'disabled'}>−</button><span class="val">${n}</span><button data-plus="${c.id}" ${left?'':'disabled'}>＋</button></div>
+      </div>`;
+    }).join('');
+    Sheet.open(`
+      <h3>Add an entry</h3>
+      <p class="sh-sub">Count it after the fact — no dragging required. Entries still come out of this week’s blocks.</p>
+      <div class="el-day">
+        <button class="btn-icon" id="elPrev" ${i===0?'disabled':''} aria-label="Previous day">‹</button>
+        <div class="el-date"><strong>${esc(this.fmt(this.sel))}</strong>${isToday?' <span class="el-today">TODAY</span>':''}</div>
+        <button class="btn-icon" id="elNext" ${i===days.length-1?'disabled':''} aria-label="Next day">›</button>
+      </div>
+      ${rows || '<p class="sh-sub">No buckets yet — add one in Settings.</p>'}
+      <div class="sheet-actions" style="margin-top:14px"><button class="btn btn-primary" id="elDone" style="flex:1">Done</button></div>`,
+      {onClose:()=>Floor.rebuild()});
+    $('#elPrev').onclick = ()=>{ if(i>0){ this.sel = days[i-1]; this.render(); } };
+    $('#elNext').onclick = ()=>{ if(i<days.length-1){ this.sel = days[i+1]; this.render(); } };
+    $('#elDone').onclick = ()=>Sheet.close();
+    $$('#sheet [data-plus]').forEach(b=>b.onclick = ()=>this.add(b.dataset.plus));
+    $$('#sheet [data-minus]').forEach(b=>b.onclick = ()=>this.remove(b.dataset.minus));
+  }
+};
+
+/* ═════════ RESTACK (reset week) — confirmed, voice-flavored ═════════ */
+const WeekRestack = {
+  confirm(){
+    const d = S.week.blocks.filter(b=>b.status==='dropped').length, g = S.week.blocks.length;
+    Sheet.open(`
+      <h3>${esc(V().restackTitle)}</h3>
+      <p class="sh-sub">${esc(V().restackBody(d,g))} Unplaced blocks go down as not-done, and a fresh stack is built from your goals.</p>
+      <div class="sheet-actions" style="margin-top:14px">
+        <button class="btn btn-ghost" id="rwCancel" style="flex:1">Not yet</button>
+        <button class="btn btn-primary" id="rwGo" style="flex:1">${esc(V().restackBtn)}</button>
+      </div>`);
+    $('#rwCancel').onclick = ()=>Sheet.close();
+    $('#rwGo').onclick = ()=>{ Sheet.close(); Floor.restackWeek(); };
+  }
+};
 
 /* ═════════ RECEIPTS ═════════ */
 const Receipts = {
@@ -1945,11 +2231,32 @@ const Receipts = {
 /* ═════════ SETTINGS ═════════ */
 const Settings = {
   open(){ show('#screen-settings'); this.render(); },
+  addBucket(fromBoard=false){
+    if(S.colors.length>=6){ toast('Six buckets max — keep it holdable.'); return; }
+    const bpKey = S.settings.blockPal||'brand';
+    let hexes;
+    if(bpKey==='custom') hexes = (S.settings.customPal&&S.settings.customPal.length===6)?S.settings.customPal:blockPalByKey('brand').hex;
+    else if(bpKey.startsWith('saved:')){ const sp=(S.settings.savedPals||[]).find(p=>'saved:'+p.id===bpKey); hexes = (sp&&sp.hex)||blockPalByKey('brand').hex; }
+    else hexes = blockPalByKey(bpKey).hex;
+    const used = new Set(S.colors.map(x=>x.name.toLowerCase()));
+    const st = STARTERS.find(s=>!used.has(s.name.toLowerCase())) || {name:'New thing', icon:'star', goal:3, slots:1, chips:null};
+    const c = {id:uid(), name:st.name, icon:st.icon, pal:PALETTE[S.colors.length%6].key,
+      customHex: bpKey==='pastel' ? null : hexes[S.colors.length%6], shape:'cube', goal:st.goal, slotSize:st.slots||1};
+    S.colors.push(c);
+    const bucket = {id:uid(), colorId:c.id, name:c.name, notes:'', chips:st.chips?{...st.chips}:null};
+    S.buckets.push(bucket);
+    for(let i=0;i<c.goal;i++) S.week.blocks.push({id:uid(), colorId:c.id, status:'tray', via:null, ts:null});
+    save();
+    if(fromBoard){
+      Floor.syncBuckets(); Floor.rebuild();
+      openBucketEditor(c, {bucket, onChange: ()=>{ Floor.syncBuckets(); Floor.rebuild(); Renderer3D.refreshColor(); }});
+    } else { this.render(); Floor.rebuild(); }
+  },
   colorRow(c){
     const p = palFor(c);
     const bk = S.buckets.find(b=>b.colorId===c.id);
     const goal = S.nextGoals[c.id] ?? c.goal;
-    const meta = [`${goal}×/wk`, (c.slotSize||1)>1?`${c.slotSize} slots`:null, (bk&&bk.chips)?'chips':null].filter(Boolean).join(' · ');
+    const meta = [`${goal}×/wk`, (c.slotSize||1)>1?`${c.slotSize} slots`:null, (bk&&bk.chips)?'small chunks':null].filter(Boolean).join(' · ');
     return `<div class="color-row cr-tap" data-c="${c.id}" data-ord="${c.id}" role="button">
       <span class="drag-h" aria-label="Drag to reorder">⠿</span>
       <span class="swatch" style="background:${p.fill};border-color:${p.edge};--swk:${iconInkFor(c, p.fill)}">${ic(c.icon)}</span>
@@ -1968,7 +2275,9 @@ const Settings = {
             <label class="switch"><input type="checkbox" id="setSound" ${S.settings.sound?'checked':''}><span class="knob"></span></label></div>
           <div class="set-row"><span class="grow">Today's slot budget</span>
             <div class="stepper"><button id="setSlotsM">−</button><span class="val" id="setSlotsV">${S.day.maxSlots}</span><button id="setSlotsP">＋</button></div></div>
-          <div class="set-note">Kachunk sends exactly one notification a day — the Roundup — and only when the app can. On iPhone, Add to Home Screen first.</div>
+          <div class="set-row"><span class="grow">Plan tomorrow ahead</span>
+            <label class="switch"><input type="checkbox" id="setPlanTmrw" ${S.settings.planTomorrow?'checked':''}><span class="knob"></span></label></div>
+          <div class="set-note">Kachunk sends exactly one notification a day — the Roundup — and only when the app can. On iPhone, Add to Home Screen first. “Plan tomorrow ahead” lets new picks pre-fill tomorrow’s shelf once today’s plan is fully banked.</div>
         </div>
       </div>
       <div class="set-group"><h3>Appearance</h3>
@@ -2017,6 +2326,7 @@ const Settings = {
     });
     $('#setTime').onchange = e=>{ S.settings.roundupTime = e.target.value||'20:30'; save(); };
     $('#setSound').onchange = e=>{ S.settings.sound = e.target.checked; save(); if(e.target.checked) sfx('tick'); };
+    $('#setPlanTmrw').onchange = e=>{ S.settings.planTomorrow = e.target.checked; save(); };
     $('#setTheme').onchange = e=>{ S.settings.theme = e.target.checked?'dark':'light'; save(); applyTheme(); };
     $$('#settingsBody .pal-card').forEach(el=>el.onclick=()=>{
       S.settings.blockPal = el.dataset.bp;
@@ -2051,22 +2361,7 @@ const Settings = {
       S.buckets.sort((a,b)=>ids.indexOf(a.colorId)-ids.indexOf(b.colorId));
       save(); this.render(); Floor.syncBuckets();
     });
-    $('#addColor').onclick = ()=>{
-      if(S.colors.length>=6) return toast('Six buckets max — keep it holdable.');
-      const bpKey = S.settings.blockPal||'brand';
-      let hexes;
-      if(bpKey==='custom') hexes = (S.settings.customPal&&S.settings.customPal.length===6)?S.settings.customPal:blockPalByKey('brand').hex;
-      else if(bpKey.startsWith('saved:')){ const sp=(S.settings.savedPals||[]).find(p=>'saved:'+p.id===bpKey); hexes = (sp&&sp.hex)||blockPalByKey('brand').hex; }
-      else hexes = blockPalByKey(bpKey).hex;
-      const used = new Set(S.colors.map(x=>x.name.toLowerCase()));
-      const st = STARTERS.find(s=>!used.has(s.name.toLowerCase())) || {name:'New thing', icon:'star', goal:3, slots:1, chips:null};
-      const c = {id:uid(), name:st.name, icon:st.icon, pal:PALETTE[S.colors.length%6].key,
-        customHex: bpKey==='pastel' ? null : hexes[S.colors.length%6], shape:'cube', goal:st.goal, slotSize:st.slots||1};
-      S.colors.push(c);
-      S.buckets.push({id:uid(), colorId:c.id, name:c.name, notes:'', chips:st.chips?{...st.chips}:null});
-      for(let i=0;i<c.goal;i++) S.week.blocks.push({id:uid(), colorId:c.id, status:'tray', via:null, ts:null});
-      save(); this.render(); Floor.rebuild();
-    };
+    $('#addColor').onclick = ()=>this.addBucket();
     $('#expData').onclick = ()=>{
       const blob = new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
@@ -2110,8 +2405,8 @@ const DayB = {
   used(day='today'){ return this.items().filter(i=>this.dayOf(i)===day).reduce((a,i)=>a+this.unitsOf(i.colorId),0); },
   doneUnits(){ return this.items().filter(i=>this.dayOf(i)==='today' && i.done).reduce((a,i)=>a+this.unitsOf(i.colorId),0); },
   todayComplete(){ const t = this.items().filter(i=>this.dayOf(i)==='today'); return t.length>0 && t.every(i=>i.done); },
-  /* once today's plan is fully banked, new plans are forced onto tomorrow */
-  target(){ return this.todayComplete() ? 'tomorrow' : 'today'; },
+  /* once today's plan is fully banked, new plans can pre-fill tomorrow — opt-in (Settings), off by default */
+  target(){ return (S.settings.planTomorrow && this.todayComplete()) ? 'tomorrow' : 'today'; },
   isPlanned(blockId){ return this.items().some(i=>i.blockId===blockId); },
   setPlanned(block, on){
     let items = this.items().filter(i=>i.blockId!==block.id);
@@ -2130,16 +2425,42 @@ const DayB = {
     }
     return true;
   },
+  _newDayAsking:false, _newDaySnoozed:false,
   staleCheck(){
     if(!S.day.date || S.day.date===dayKey()) return false;
-    // new day: banked items retire, tomorrow's pre-plan becomes today, celebration re-arms
+    // nothing was planned → nothing to review; roll the date silently, no popup
+    if(!this.items().length){ S.day.date = dayKey(); S.day.celebrated = false; save(); return false; }
+    if(this._newDayAsking || this._newDaySnoozed) return false;
+    // ask before assuming — the flow only starts on her say-so
+    this._newDayAsking = true;
+    const nice = new Date().toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'});
+    let confirmed = false;
+    $('#screen-floor').classList.add('board-live');
+    Sheet.open(`
+      <h3>Start a new day?</h3>
+      <p class="sh-sub">${esc(V().newDay || 'A new day is here.')}</p>
+      <p class="sh-sub" style="opacity:.75">It’s ${esc(nice)}. Yesterday’s plan gets a quick review — nothing resets into the void.</p>
+      <div class="sheet-actions" style="margin-top:14px">
+        <button class="btn btn-ghost" id="ndLater" style="flex:1">Not yet</button>
+        <button class="btn btn-primary" id="ndGo" style="flex:1">Start the day</button>
+      </div>`, {onClose:()=>{
+        this._newDayAsking = false;
+        $('#screen-floor').classList.remove('board-live');
+        if(confirmed) this.beginNewDay();
+        else { this._newDaySnoozed = true; Floor.applyMode(); } // re-asks next time the app comes back
+      }});
+    $('#ndLater').onclick = ()=>Sheet.close();
+    $('#ndGo').onclick = ()=>{ confirmed = true; Sheet.close(); };
+    return true;
+  },
+  beginNewDay(){
+    // banked items retire, tomorrow's pre-plan becomes today, celebration re-arms
     S.day.items = this.items().filter(i=>!i.done);
     const staleIds = new Set(this.items().filter(i=>this.dayOf(i)==='today').map(i=>i.id));
     this.items().forEach(i=>{ if(this.dayOf(i)==='tomorrow') i.day='today'; });
     S.day.celebrated = false; save();
-    if(staleIds.size){ this.resetFlow(staleIds); return true; }
-    S.day.date = dayKey(); save();
-    return false;
+    if(staleIds.size){ this.resetFlow(staleIds); return; }
+    S.day.date = dayKey(); save(); Floor.applyMode();
   },
   resetFlow(onlyIds){
     S.day.date = dayKey(); save(); // stamp first so repeated repaints can't re-run the migration
@@ -2155,16 +2476,17 @@ const DayB = {
           <button class="btn btn-ghost" data-act="toss" style="padding:7px 12px;font-size:12.5px">Toss</button>
         </span></div>`;
     }).join('');
+    $('#screen-floor').classList.add('board-live');
     Sheet.open(`
       <h3>Yesterday's plan is still out.</h3>
       <p class="sh-sub">Log it (into the bucket), keep it for today, or toss it back on the floor. Nothing resets into the void.</p>
-      ${rows}`, {onClose:()=>{ S.day.date = dayKey(); save(); Floor.applyMode(); }});
+      ${rows}`, {onClose:()=>{ $('#screen-floor').classList.remove('board-live'); S.day.date = dayKey(); save(); Floor.applyMode(); }});
     $$('#sheet [data-act]').forEach(btn=>btn.onclick = ()=>{
       const row = btn.closest('[data-id]'); const it = this.items().find(k=>k.id===row.dataset.id);
       if(it){
         if(btn.dataset.act==='log'){
           const block = S.week.blocks.find(b=>b.id===it.blockId);
-          if(block && block.status!=='dropped'){ block.status='dropped'; block.via='day'; block.ts=new Date().toISOString(); sfx('drop'); }
+          if(block && block.status!=='dropped'){ block.status='dropped'; block.via='day'; block.ts=new Date().toISOString(); Undo.push({type:'drop', blockId:block.id}); sfx('drop'); }
           this.dropFromPlan(it.blockId);
         }
         if(btn.dataset.act==='toss') this.dropFromPlan(it.blockId);
@@ -2232,7 +2554,14 @@ function boot(){
   $('#btnReceipts').onclick = ()=>Receipts.open();
   $('#fabDismiss').onclick = e=>{ e.stopPropagation(); S.settings.sweepDismissed = dayKey(); save(); $('#btnRoundup').hidden = true; };
   $('#spRestack').onclick = ()=>Floor.restackWeek();
-  $('#spClose').onclick = ()=>Floor.exitSweep();
+  $('#spClose').onclick = ()=>Floor.closeSweep();
+  // bottom action bar
+  $$('#actionBar .ab-ic').forEach(el=>el.innerHTML = ic(el.dataset.ic));
+  $('#abUndo').onclick = ()=>Undo.pop();
+  $('#abReset').onclick = ()=>DayReset.confirm();
+  $('#abAdd').onclick = ()=>EntryLog.open();
+  $('#abNight').onclick = ()=>{ if(!Floor.sweepMode) Floor.enterSweep('day'); };
+  $('#abRestack').onclick = ()=>WeekRestack.confirm();
   $('#btnSettings').onclick = ()=>Settings.open();
   $('#receiptsBack').onclick = ()=>{ show('#screen-floor'); };
   $('#settingsBack').onclick = ()=>{ show('#screen-floor'); Floor.rebuild(); };
@@ -2249,6 +2578,7 @@ function boot(){
   if(S.onboarded){ show('#screen-floor'); Floor.rebuild(); if(!DayB.staleCheck()) Floor.applyMode(); }
   // roll the day over when the app is brought back to the foreground (left open overnight)
   document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState==='hidden'){ DayB._newDaySnoozed = false; return; } // "Not yet" holds only until the app is put away
     if(document.visibilityState==='visible' && S.onboarded && S.day.date!==dayKey()){
       if(!DayB.staleCheck()) Floor.applyMode();
     }
