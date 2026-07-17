@@ -113,27 +113,39 @@ function applyBlockPalette(key, colors, customHexes){
     else c.customHex = bp.hex[i%6];
   });
 }
-/* "throughout the day" setup — real quantities, in the user's own unit.
-   Example: calories → total 2000, block 1000, small chunk 250. */
-function chipConfigHTML(chips){
+/* ongoing-habit setup — real quantities, in the user's own unit.
+   Model: {unit, total (the day's full amount), chunk (one small chunk),
+   block (minimum amount — the day's block counts here even short of total)}.
+   Example (water): total 68 oz · small chunk 8 oz · minimum 48 oz · 7 days. */
+function chunkVizHTML(cfg){
+  if(!cfg) return '';
+  const u = cfg.unit ? esc(cfg.unit) : 'times';
+  const shown = Math.min(cfg.perDay, 16), over = cfg.perDay - shown;
+  const cells = Array.from({length:shown},(_,k)=>`<i class="${k<cfg.perBlock?'fill':''}"></i>`).join('');
+  const bpd = Math.floor(cfg.perDay/cfg.perBlock);
+  return `<div class="cc-viz">
+    <div class="cc-cells">${cells}${over>0?`<em>+${over}</em>`:''}</div>
+    <div class="cc-cap">Each small chunk is ${cfg.chunk} ${u}. Your block counts at ${cfg.block}${cfg.block<cfg.total?` — ${cfg.total} is the full day`:''}.${bpd>1?` Up to ${bpd} blocks a day.`:''}</div>
+  </div>`;
+}
+function chipConfigHTML(chips, goal){
   if(!chips) return '';
   const cfg = chunkCfg(chips);
-  const u = cfg.unit ? esc(cfg.unit) : 'times';
-  const blocksPerDay = Math.floor(cfg.perDay/cfg.perBlock);
   const inp = 'border:none;background:var(--surface);border-radius:10px;padding:9px 12px;font:inherit;font-size:15px;color:var(--ink);width:100%;text-align:center';
   return `<div class="chip-config">
     <div class="cc-row"><label>What are you counting?</label>
-      <input type="text" data-f="unit" value="${esc(chips.unit||'')}" placeholder="calories, glasses, minutes…" maxlength="18"
+      <input type="text" data-f="unit" value="${esc(chips.unit||'')}" placeholder="calories, ounces, minutes…" maxlength="18"
         style="${inp};text-align:left"></div>
     <div class="cc-grid">
       <div><label>Daily total</label><input type="number" data-f="total" inputmode="numeric" min="1" value="${cfg.total}" style="${inp}"></div>
-      <div><label>Block counts at</label><input type="number" data-f="block" inputmode="numeric" min="1" value="${cfg.block}" style="${inp}"></div>
-      <div><label>Small chunk =</label><input type="number" data-f="chunk" inputmode="numeric" min="1" value="${cfg.chunk}" style="${inp}"></div>
+      ${goal!==undefined?`<div><label># of days</label><input type="number" data-f="days" inputmode="numeric" min="1" max="7" value="${goal}" style="${inp}"></div>`:''}
+      <div><label>Small chunk</label><input type="number" data-f="chunk" inputmode="numeric" min="1" value="${cfg.chunk}" style="${inp}"></div>
+      <div><label>Minimum amount</label><input type="number" data-f="block" inputmode="numeric" min="1" value="${cfg.block}" style="${inp}"></div>
     </div>
-    <div class="cc-sum">${cfg.perDay}&nbsp;small&nbsp;chunk${cfg.perDay>1?'s':''} of ${cfg.chunk}&nbsp;${u} a&nbsp;day · a block fills every&nbsp;${cfg.perBlock}${cfg.block<cfg.total?` — ${cfg.block}&nbsp;still&nbsp;counts,&nbsp;even&nbsp;short&nbsp;of&nbsp;your&nbsp;${cfg.total}&nbsp;total`:''}${blocksPerDay>1?` · up to ${blocksPerDay}&nbsp;blocks&nbsp;a&nbsp;day`:''}</div>
+    ${chunkVizHTML(cfg)}
   </div>`;
 }
-function bindChipConfig(card, getChips, upd){
+function bindChipConfig(card, getChips, upd, goalIO){
   const chips = getChips(); if(!chips) return;
   // editing always lands in the quantity shape (converts old saves on first touch)
   const modern = ()=>{
@@ -145,11 +157,15 @@ function bindChipConfig(card, getChips, upd){
     return chips;
   };
   card.querySelector('[data-f="unit"]')?.addEventListener('change', e=>{ modern().unit = e.target.value.trim(); upd(); });
+  card.querySelector('[data-f="days"]')?.addEventListener('change', e=>{
+    if(goalIO) goalIO.set(Math.max(1, Math.min(7, Math.round(+e.target.value)||1)));
+    upd();
+  });
   for(const f of ['total','block','chunk']){
     card.querySelector(`[data-f="${f}"]`)?.addEventListener('change', e=>{
       const m = modern();
       m[f] = Math.max(1, Math.round(+e.target.value)||1);
-      // keep it coherent: chunk ≤ block ≤ total
+      // keep it coherent: chunk ≤ block (minimum) ≤ total
       m.chunk = Math.max(1, Math.min(m.chunk, m.total));
       m.block = Math.min(m.total, Math.max(m.chunk, m.block));
       upd();
@@ -254,20 +270,118 @@ const SHAPES = [
   {key:'drum',  name:'Drum'},
 ];
 
-/* ── starter colors ── */
+/* ── recommended starting points — 100 of them, grouped; `top` = the front grid ──
+   Ongoing habits carry a chips config {unit, total (daily), chunk, block (minimum amount)}.
+   goal = times/week for start-to-finish · days-tracked/week for ongoing. */
 const STARTERS = [
-  {name:'Move',      icon:'dumbbell',   pal:'gentlemist',   goal:3, slots:2},
-  {name:'Meal Prep', icon:'utensils',   pal:'dreamysand',  goal:2, slots:1},
-  {name:'Social',    icon:'smile',      pal:'goldenglow',  goal:2, slots:3},
-  {name:'Water',     icon:'droplet',    pal:'cloudyhaze',   goal:7, slots:1, chips:{unit:'glasses', total:8, chunk:1, block:6}},
-  {name:'Deep Work', icon:'brain',      pal:'softhoney',   goal:4, slots:2},
-  {name:'Family',    icon:'heart',      pal:'peachwhisper',       goal:2, slots:1},
-  {name:'Rest',      icon:'moon',       pal:'cloudyhaze', goal:3, slots:1},
-  {name:'Read',      icon:'book_open',  pal:'softhoney',       goal:3, slots:1},
-  {name:'Create',    icon:'palette',    pal:'gentlemist',  goal:2, slots:2},
-  {name:'Outside',   icon:'leaf',       pal:'softhoney',       goal:4, slots:1},
-  {name:'Admin',     icon:'inbox',      pal:'dreamysand',  goal:3, slots:1},
-  {name:'Tidy',      icon:'sparkles',   pal:'cloudyhaze', goal:4, slots:1},
+  /* Body & movement */
+  {name:'Move',        icon:'dumbbell',    pal:'gentlemist',   goal:3, slots:2, cat:'Body & movement', top:true},
+  {name:'Walk',        icon:'footprints',  pal:'dreamysand',   goal:5, slots:1, cat:'Body & movement'},
+  {name:'Run',         icon:'flame',       pal:'peachwhisper', goal:3, slots:2, cat:'Body & movement'},
+  {name:'Ride',        icon:'bike',        pal:'goldenglow',   goal:2, slots:2, cat:'Body & movement'},
+  {name:'Swim',        icon:'waves',       pal:'gentlemist',   goal:2, slots:2, cat:'Body & movement'},
+  {name:'Stretch',     icon:'heart_pulse', pal:'cloudyhaze',   goal:4, slots:1, cat:'Body & movement'},
+  {name:'Yoga',        icon:'sun',         pal:'softhoney',    goal:3, slots:2, cat:'Body & movement'},
+  {name:'Cardio',      icon:'activity',    pal:'peachwhisper', goal:3, slots:2, cat:'Body & movement'},
+  {name:'Dance',       icon:'party_popper',pal:'goldenglow',   goal:1, slots:2, cat:'Body & movement'},
+  {name:'Team sport',  icon:'trophy',      pal:'dreamysand',   goal:1, slots:3, cat:'Body & movement'},
+  {name:'Race prep',   icon:'medal',      pal:'gentlemist',   goal:3, slots:2, cat:'Body & movement'},
+  {name:'Push-ups',    icon:'dumbbell',    pal:'cloudyhaze',   goal:5, slots:1, cat:'Body & movement', chips:{unit:'push-ups', total:50, chunk:10, block:30}},
+  {name:'Hike',        icon:'mountain',    pal:'softhoney',    goal:1, slots:3, cat:'Body & movement'},
+  {name:'Outside',     icon:'leaf',        pal:'softhoney',    goal:4, slots:1, cat:'Body & movement', top:true},
+  /* Food & drink */
+  {name:'Meal Prep',   icon:'utensils',    pal:'dreamysand',   goal:2, slots:1, cat:'Food & drink', top:true},
+  {name:'Water',       icon:'droplet',     pal:'cloudyhaze',   goal:7, slots:1, cat:'Food & drink', top:true, chips:{unit:'oz', total:68, chunk:8, block:48}},
+  {name:'Cook',        icon:'chef_hat',    pal:'peachwhisper', goal:4, slots:1, cat:'Food & drink'},
+  {name:'Veggies',     icon:'carrot',      pal:'dreamysand',   goal:5, slots:1, cat:'Food & drink', chips:{unit:'servings', total:4, chunk:1, block:3}},
+  {name:'Fruit',       icon:'apple',       pal:'peachwhisper', goal:5, slots:1, cat:'Food & drink', chips:{unit:'servings', total:3, chunk:1, block:2}},
+  {name:'Protein',     icon:'egg',         pal:'cloudyhaze',   goal:5, slots:1, cat:'Food & drink', chips:{unit:'grams', total:100, chunk:20, block:80}},
+  {name:'Good lunch',  icon:'salad',       pal:'gentlemist',   goal:4, slots:1, cat:'Food & drink'},
+  {name:'Bake',        icon:'cake',        pal:'goldenglow',   goal:1, slots:2, cat:'Food & drink'},
+  {name:'New recipe',  icon:'cookie',      pal:'softhoney',    goal:1, slots:2, cat:'Food & drink'},
+  {name:'Slow coffee', icon:'coffee',      pal:'softhoney',    goal:3, slots:1, cat:'Food & drink'},
+  {name:'Groceries',   icon:'shopping_cart',pal:'gentlemist',  goal:1, slots:1, cat:'Food & drink'},
+  {name:'Calories',    icon:'clipboard_list',pal:'dreamysand', goal:6, slots:1, cat:'Food & drink', chips:{unit:'calories', total:2000, chunk:250, block:1750}},
+  {name:'Pizza night', icon:'pizza',       pal:'peachwhisper', goal:1, slots:2, cat:'Food & drink'},
+  /* Mind & spirit */
+  {name:'Deep Work',   icon:'brain',       pal:'softhoney',    goal:4, slots:2, cat:'Mind & spirit', top:true},
+  {name:'Meditate',    icon:'cloud',       pal:'gentlemist',   goal:5, slots:1, cat:'Mind & spirit'},
+  {name:'Journal',     icon:'notebook_pen',pal:'dreamysand',   goal:3, slots:1, cat:'Mind & spirit'},
+  {name:'Read',        icon:'book_open',   pal:'softhoney',    goal:3, slots:1, cat:'Mind & spirit', top:true},
+  {name:'Study',       icon:'graduation_cap',pal:'gentlemist', goal:3, slots:2, cat:'Mind & spirit'},
+  {name:'Language',    icon:'globe',       pal:'goldenglow',   goal:4, slots:1, cat:'Mind & spirit'},
+  {name:'Scripture',   icon:'book_open',   pal:'cloudyhaze',   goal:5, slots:1, cat:'Mind & spirit'},
+  {name:'Screen rest', icon:'eye',        pal:'peachwhisper', goal:5, slots:1, cat:'Mind & spirit', chips:{unit:'breaks', total:6, chunk:1, block:4}},
+  {name:'Daily plan',  icon:'list_checks', pal:'dreamysand',   goal:5, slots:1, cat:'Mind & spirit'},
+  {name:'Week plan',   icon:'calendar',   pal:'gentlemist',   goal:1, slots:1, cat:'Mind & spirit'},
+  {name:'Puzzles',     icon:'puzzle',      pal:'goldenglow',   goal:2, slots:1, cat:'Mind & spirit'},
+  {name:'Pray',        icon:'prayer',      pal:'cloudyhaze',   goal:5, slots:1, cat:'Mind & spirit'},
+  {name:'Gratitude',   icon:'star',        pal:'softhoney',    goal:7, slots:1, cat:'Mind & spirit', chips:{unit:'moments', total:3, chunk:1, block:3}},
+  /* People & pets */
+  {name:'Family',      icon:'heart',       pal:'peachwhisper', goal:2, slots:1, cat:'People & pets', top:true},
+  {name:'Social',      icon:'smile',       pal:'goldenglow',   goal:2, slots:3, cat:'People & pets', top:true},
+  {name:'Call home',   icon:'phone',       pal:'gentlemist',   goal:1, slots:1, cat:'People & pets'},
+  {name:'Date night',  icon:'landmark',    pal:'peachwhisper', goal:1, slots:3, cat:'People & pets'},
+  {name:'Movie night', icon:'film',        pal:'dreamysand',   goal:1, slots:2, cat:'People & pets'},
+  {name:'Kid time',    icon:'baby',        pal:'goldenglow',   goal:3, slots:1, cat:'People & pets'},
+  {name:'Dog walk',    icon:'dog',         pal:'softhoney',    goal:7, slots:1, cat:'People & pets'},
+  {name:'Pet time',    icon:'paw_print',   pal:'cloudyhaze',   goal:3, slots:1, cat:'People & pets'},
+  {name:'Game night',  icon:'gamepad_2',   pal:'gentlemist',   goal:1, slots:2, cat:'People & pets'},
+  {name:'Snail mail',  icon:'feather',     pal:'dreamysand',   goal:1, slots:1, cat:'People & pets'},
+  {name:'Give back',   icon:'gift',        pal:'goldenglow',   goal:1, slots:2, cat:'People & pets'},
+  {name:'Hosting',     icon:'house',       pal:'peachwhisper', goal:1, slots:3, cat:'People & pets'},
+  {name:'Listen more', icon:'ear',         pal:'cloudyhaze',   goal:3, slots:1, cat:'People & pets'},
+  /* Rest & recovery */
+  {name:'Rest',        icon:'moon',        pal:'cloudyhaze',   goal:3, slots:1, cat:'Rest & recovery', top:true},
+  {name:'Sleep by 10', icon:'bed',         pal:'gentlemist',   goal:5, slots:1, cat:'Rest & recovery'},
+  {name:'Up early',    icon:'alarm_clock', pal:'goldenglow',   goal:5, slots:1, cat:'Rest & recovery'},
+  {name:'Lunch break', icon:'armchair',    pal:'dreamysand',   goal:5, slots:1, cat:'Rest & recovery'},
+  {name:'Bath night',  icon:'bath',        pal:'gentlemist',   goal:1, slots:1, cat:'Rest & recovery'},
+  {name:'Unplug',      icon:'sofa',        pal:'softhoney',    goal:3, slots:1, cat:'Rest & recovery'},
+  {name:'Breathe',     icon:'wind',        pal:'cloudyhaze',   goal:5, slots:1, cat:'Rest & recovery', chips:{unit:'breathers', total:5, chunk:1, block:3}},
+  {name:'Meds',        icon:'pill',        pal:'peachwhisper', goal:7, slots:1, cat:'Rest & recovery', chips:{unit:'doses', total:2, chunk:1, block:2}},
+  {name:'Checkup',     icon:'stethoscope', pal:'gentlemist',   goal:1, slots:1, cat:'Rest & recovery'},
+  {name:'Sunlight',    icon:'sun',        pal:'goldenglow',   goal:5, slots:1, cat:'Rest & recovery'},
+  {name:'Self-care',   icon:'scissors',    pal:'dreamysand',   goal:2, slots:1, cat:'Rest & recovery'},
+  {name:'Power nap',   icon:'bed',         pal:'softhoney',    goal:2, slots:1, cat:'Rest & recovery'},
+  /* Home & errands */
+  {name:'Tidy',        icon:'sparkles',    pal:'cloudyhaze',   goal:4, slots:1, cat:'Home & errands', top:true},
+  {name:'Admin',       icon:'inbox',       pal:'dreamysand',   goal:3, slots:1, cat:'Home & errands', top:true},
+  {name:'Laundry',     icon:'shirt',       pal:'gentlemist',   goal:1, slots:1, cat:'Home & errands'},
+  {name:'Fix it',      icon:'wrench',      pal:'goldenglow',   goal:1, slots:2, cat:'Home & errands'},
+  {name:'DIY project', icon:'hammer',      pal:'peachwhisper', goal:1, slots:3, cat:'Home & errands'},
+  {name:'Plants',      icon:'flower',      pal:'dreamysand',   goal:2, slots:1, cat:'Home & errands'},
+  {name:'Garden',      icon:'sprout',      pal:'softhoney',    goal:2, slots:2, cat:'Home & errands'},
+  {name:'Errands',     icon:'car',         pal:'gentlemist',   goal:1, slots:1, cat:'Home & errands'},
+  {name:'Budget',      icon:'wallet',      pal:'goldenglow',   goal:1, slots:1, cat:'Home & errands'},
+  {name:'Pay bills',   icon:'credit_card', pal:'cloudyhaze',   goal:1, slots:1, cat:'Home & errands'},
+  {name:'Savings',     icon:'banknote',    pal:'dreamysand',   goal:1, slots:1, cat:'Home & errands'},
+  {name:'Declutter',   icon:'folder',      pal:'peachwhisper', goal:1, slots:1, cat:'Home & errands'},
+  {name:'Pack ahead',  icon:'backpack',    pal:'gentlemist',   goal:5, slots:1, cat:'Home & errands'},
+  /* Create & play */
+  {name:'Create',      icon:'palette',     pal:'gentlemist',   goal:2, slots:2, cat:'Create & play', top:true},
+  {name:'Write',       icon:'pen',         pal:'dreamysand',   goal:3, slots:1, cat:'Create & play'},
+  {name:'Practice',    icon:'music',       pal:'goldenglow',   goal:4, slots:1, cat:'Create & play'},
+  {name:'Sing',        icon:'mic',         pal:'peachwhisper', goal:2, slots:1, cat:'Create & play'},
+  {name:'Draw',        icon:'brush',       pal:'softhoney',    goal:3, slots:1, cat:'Create & play'},
+  {name:'Photos',      icon:'camera',      pal:'cloudyhaze',   goal:2, slots:1, cat:'Create & play'},
+  {name:'Scrapbook',   icon:'image',       pal:'gentlemist',   goal:1, slots:1, cat:'Create & play'},
+  {name:'Side project',icon:'rocket',      pal:'goldenglow',   goal:2, slots:2, cat:'Create & play'},
+  {name:'Code',        icon:'code',        pal:'dreamysand',   goal:2, slots:2, cat:'Create & play'},
+  {name:'Adventure',   icon:'tent',        pal:'softhoney',    goal:1, slots:3, cat:'Create & play'},
+  {name:'Explore',     icon:'compass',     pal:'peachwhisper', goal:1, slots:2, cat:'Create & play'},
+  {name:'Fishing',     icon:'fish',        pal:'gentlemist',   goal:1, slots:3, cat:'Create & play'},
+  {name:'Podcasts',    icon:'headphones',  pal:'cloudyhaze',   goal:3, slots:1, cat:'Create & play'},
+  /* Work & growth */
+  {name:'Inbox zero',  icon:'mail',        pal:'dreamysand',   goal:5, slots:1, cat:'Work & growth'},
+  {name:'Log off by 6',icon:'laptop',      pal:'gentlemist',   goal:5, slots:1, cat:'Work & growth'},
+  {name:'Reach out',   icon:'briefcase',   pal:'goldenglow',   goal:1, slots:1, cat:'Work & growth'},
+  {name:'New skill',   icon:'lightbulb',   pal:'peachwhisper', goal:3, slots:1, cat:'Work & growth'},
+  {name:'Out on time', icon:'clock',       pal:'cloudyhaze',   goal:5, slots:1, cat:'Work & growth'},
+  {name:'Spending',    icon:'dollar_sign', pal:'softhoney',    goal:3, slots:1, cat:'Work & growth'},
+  {name:'Plan a trip', icon:'plane',       pal:'gentlemist',   goal:1, slots:2, cat:'Work & growth'},
+  {name:'Goal check',  icon:'flag',        pal:'dreamysand',   goal:1, slots:1, cat:'Work & growth'},
+  {name:'Research',    icon:'glasses',     pal:'goldenglow',   goal:2, slots:1, cat:'Work & growth'},
 ];
 
 /* ── voices ── */
@@ -686,9 +800,10 @@ const OB = {
   start(){
     this.step = 0;
     this.draft = { name:'', colors: [], palKey:'brand', roundupTime:'20:30', voice:'zesty', maxSlots:8 };
+    this.pickEdit = null; this.newDraft = null; this.pickAll = false;
     show('#screen-onboard'); this.render();
   },
-  steps(){ return ['name','pick','palette', ...this.draft.colors.map((c,i)=>'bucket:'+i), 'recap','voice']; },
+  steps(){ return ['name','pick','palette','recap','voice']; },
   weeklyGoalSlots(){ return this.draft.colors.reduce((a,c)=>a+(c.goal*(c.slots||1)),0); },
 
   paint(bg, inkOverride){
@@ -718,30 +833,84 @@ const OB = {
     }
 
     if(key==='pick'){
-      this.paint('var(--mark)', '#FDFBF7');
+      this.paint('#DFC289', '#33414D');
+      const openId = this.pickEdit;
+      const collapsed = c=>{ const p = palFor(c); return `<button type="button" class="pk-card on" data-open="${c.id}">
+          <span class="swatch pk-sw" style="background:${p.fill};border-color:${p.edge};--swk:${iconInkFor(c,p.fill)}">${ic(c.icon)}</span>
+          <span class="pk-name">${esc(c.name)}</span><span class="pk-act">${ic('pen')}</span></button>`; };
+      const cardFor = st=>{
+        const c = d.colors.find(x=>x.starter===st.name);
+        if(c && openId===c.id) return `<div class="pk-expand">${bucketEditorHTML(c, {draft:true})}</div>`;
+        if(c) return collapsed(c);
+        return `<button type="button" class="pk-card" data-starter="${st.name}">${ic(st.icon)}<span class="pk-name">${st.name}</span><span class="pk-act">＋</span></button>`;
+      };
+      const customs = d.colors.filter(c=>!c.starter).map(c=>
+        openId===c.id ? `<div class="pk-expand">${bucketEditorHTML(c, {draft:true})}</div>` : collapsed(c)).join('');
+      const nd = this.newDraft;
+      const newCard = (openId==='__new' && nd) ? (()=>{ const p = palFor(nd); return `<div class="pk-expand"><div class="bucket-card be-card be-new">
+          <div class="bc-head">
+            <button class="swatch" data-f="look" style="width:46px;height:46px;background:${p.fill};border-color:${p.edge};--swk:${iconInkFor(nd,p.fill)}" title="Change look">${ic(nd.icon)}</button>
+            <input type="text" data-f="bname" placeholder="Name your bucket" aria-label="Bucket name" style="font-weight:700;font-size:17px">
+          </div>
+          <div class="set-note" style="padding:6px 2px 0">Icon + name together give the best starting guess — everything's tunable after.</div>
+          <div class="sheet-actions" style="margin-top:12px">
+            <button class="btn btn-ghost" data-f="cancel" style="flex:none;padding:11px 16px">Cancel</button>
+            <button class="btn btn-primary" data-f="create" style="flex:1">Create</button>
+          </div></div></div>`; })()
+        : `<button type="button" class="pk-card" data-custom="1"><span class="pk-name">＋ Your own</span></button>`;
+      let gridInner;
+      if(this.pickAll){
+        const cats = [...new Set(STARTERS.map(s=>s.cat))];
+        gridInner = cats.map(cat=>`<div class="pk-cat">${cat}</div>`
+          + STARTERS.filter(s=>s.cat===cat).map(cardFor).join('')).join('');
+      } else {
+        gridInner = STARTERS.filter(s=>s.top || d.colors.some(c=>c.starter===s.name)).map(cardFor).join('');
+      }
+      const moreCard = `<button type="button" class="pk-card pk-more" data-more="1">${ic(this.pickAll?'back':'sparkle')}<span class="pk-name">${this.pickAll?'Show fewer':`See all ${STARTERS.length}`}</span></button>`;
       b.innerHTML = `
         <h2 class="ob-title">Pick your buckets${d.name?', '+esc(d.name.trim().split(' ')[0]):''}</h2>
-        <p class="ob-sub">A bucket is a commitment — a thing you want to do some number of times a week. Each one gets its own blocks.</p>
-        <div class="chip-grid">${STARTERS.map(st=>{
-          const on = d.colors.some(c=>c.starter===st.name);
-          return `<button class="chip white ${on?'on':''}" data-starter="${st.name}">${ic(st.icon)}${st.name}</button>`;
-        }).join('')}
-          <button class="chip white" data-custom="1">＋ Your own</button>
-        </div>
-        <div style="color:rgba(253,251,247,.85);font-size:13.5px">${d.colors.length ? d.colors.length+' of 6 picked — you can rename, resize, and set goals next.' : 'Pick a few — six max, keeps the board easy to hold.'}</div>`;
-      $$('#obBody .chip[data-starter]').forEach(ch=>ch.onclick=()=>{
-        const st = STARTERS.find(x=>x.name===ch.dataset.starter);
-        const has = d.colors.findIndex(c=>c.starter===st.name);
-        if(has>=0) d.colors.splice(has,1);
-        else if(d.colors.length<6) d.colors.push({id:uid(), name:st.name, icon:st.icon, pal:st.pal, shape:'cube', goal:st.goal, slots:st.slots||1, chips:st.chips?{...st.chips}:null, starter:st.name});
-        else return toast('Six buckets max — keep it holdable.');
-        this.render();
-      });
-      $('#obBody .chip[data-custom]').onclick=()=>{
+        <p class="ob-sub">A bucket is a loose plan, not a commitment. Choose your blocks now, then claim the blocks you complete as you go. That's it.</p>
+        <div class="pk-grid">${gridInner}${customs}${moreCard}${newCard}</div>
+        <div style="color:rgba(51,65,77,.72);font-size:13.5px">${d.colors.length ? d.colors.length+' of 6 picked — tap any bucket to tune it.' : 'Pick a few — six max, keeps the board easy to hold.'}</div>`;
+      const more = $('#obBody .pk-card[data-more]');
+      if(more) more.onclick = ()=>{ this.pickAll = !this.pickAll; this.render(); };
+      $$('#obBody .pk-card[data-starter]').forEach(el=>el.onclick=()=>{
         if(d.colors.length>=6) return toast('Six buckets max — keep it holdable.');
-        d.colors.push({id:uid(), name:'My thing', icon:'star', pal:PALETTE[d.colors.length%6].key, shape:'cube', goal:3, slots:1, chips:null, starter:null});
-        this.render();
+        const st = STARTERS.find(x=>x.name===el.dataset.starter);
+        const c = {id:uid(), name:st.name, icon:st.icon, pal:st.pal, shape:'cube', goal:st.goal, slots:st.slots||1, chips:st.chips?{...st.chips}:null, starter:st.name};
+        d.colors.push(c); this.pickEdit = c.id; this.render();
+      });
+      $$('#obBody .pk-card[data-open]').forEach(el=>el.onclick=()=>{ this.pickEdit = el.dataset.open; this.render(); });
+      const pkBe = $('#obBody .pk-expand .be-card[data-be]');
+      if(pkBe){
+        const c = d.colors.find(x=>x.id===pkBe.dataset.be);
+        bindBucketEditor(pkBe, c, {draft:true, draftColors:d.colors,
+          onChange: ()=>this.render(), onClose: ()=>{ this.pickEdit = null; }});
+      }
+      const cu = $('#obBody .pk-card[data-custom]');
+      if(cu) cu.onclick = ()=>{
+        if(d.colors.length>=6) return toast('Six buckets max — keep it holdable.');
+        this.newDraft = {id:uid(), name:'', icon:'star', pal:PALETTE[d.colors.length%6].key, shape:'cube'};
+        this.pickEdit = '__new'; this.render();
       };
+      const ndRoot = $('#obBody .be-new');
+      if(ndRoot){
+        const nameI = ndRoot.querySelector('[data-f=bname]');
+        nameI.value = nd.name||'';
+        nameI.oninput = e=>{ nd.name = e.target.value; };
+        const createIt = ()=>{
+          const nm = (nd.name||'').trim(); if(!nm){ toast('Give it a name first.'); return; }
+          const g = starterGuess(nm, nd.icon);
+          const c = {id:nd.id, name:nm, icon:nd.icon, pal:nd.pal, shape:'cube', goal:g.goal, slots:g.slots, chips:g.chips, starter:null};
+        d.colors.push(c);
+          this.newDraft = null; this.pickEdit = c.id; this.render();
+        };
+        nameI.onkeydown = e=>{ if(e.key==='Enter') createIt(); };
+        ndRoot.querySelector('[data-f=look]').onclick = ()=>openColorPicker(nd, ()=>this.render());
+        ndRoot.querySelector('[data-f=create]').onclick = createIt;
+        ndRoot.querySelector('[data-f=cancel]').onclick = ()=>{ this.newDraft = null; this.pickEdit = null; this.render(); };
+        if(!nd.name) setTimeout(()=>nameI.focus(), 60);
+      }
     }
 
     if(key==='palette'){
@@ -770,53 +939,6 @@ const OB = {
       });
     }
 
-    if(key && key.startsWith('bucket:')){
-      const i = +key.split(':')[1];
-      const c = d.colors[i]; if(!c){ this.step = steps.indexOf('recap'); this.render(); return; }
-      const p = palFor(c);
-      this.paint(p.fill, inkFor(p.fill));
-      b.innerHTML = `
-        <div class="ob-count" style="color:${inkFor(p.fill)};opacity:.65">bucket ${i+1} of ${d.colors.length}</div>
-        <h2 class="ob-title">Set up ${esc(c.name)}</h2>
-        <div class="bucket-card" data-c="${c.id}" style="border-color:${p.edge}">
-          <div class="bc-head"><button class="swatch" data-f="look" style="background:${p.fill};border-color:${p.edge};--swk:${iconInkFor(c, p.fill)}" title="Change look">${ic(c.icon)}</button>
-            <input type="text" data-f="bname" value="${esc(c.name)}" aria-label="Bucket name" style="font-weight:700;font-size:17px">
-          </div>
-          <div class="be-lab">How does ${esc(c.name)} happen?</div>
-          <div class="mode-pick">
-            <button type="button" class="mode-card ${!c.chips?'on':''}" data-mode="chunk">
-              <strong>In chunks</strong>
-              <span>One outing, one block —<br>the gym, or coffee<br>with a friend.</span>
-            </button>
-            <button type="button" class="mode-card ${c.chips?'on':''}" data-mode="allday">
-              <strong>Throughout<br>the day</strong>
-              <span>Small chunks that<br>add up — calories,<br>water, gratitude.</span>
-            </button>
-          </div>
-          ${chipConfigHTML(c.chips)}
-          <div class="be-lab">Blocks per week<span>${c.chips?'How many days do you want to track this habit during the&nbsp;week?':'How many times a week do you want to complete a&nbsp;block?'}</span></div>
-          <div class="stepper"><button data-f="g-">−</button><span class="val">${c.goal}</span><button data-f="g+">＋</button></div>
-          <div class="be-lab">Block size<span>Scales with how long it takes to complete.</span></div>
-          <div class="stepper"><button data-f="s-">−</button><span class="val">${c.slots||1} slot${(c.slots||1)>1?'s':''}</span><button data-f="s+">＋</button></div>
-          <div class="bc-label">Notes</div>
-          <textarea data-f="notes" placeholder="e.g. 3× = 2 swim + 1 yoga">${esc(c.notes||'')}</textarea>
-        </div>`;
-      const card = $('#obBody .bucket-card');
-      card.querySelector('[data-f=look]').onclick = ()=>openColorPicker(c, ()=>this.render());
-      card.querySelector('[data-f=bname]').oninput = e=>{ c.name = e.target.value; c.bucketName = e.target.value; };
-      card.querySelector('[data-f=notes]').oninput = e=>c.notes = e.target.value;
-      card.querySelectorAll('.mode-card').forEach(btn=>btn.onclick = ()=>{
-        c.chips = btn.dataset.mode==='allday' ? (c.chips||freshChunks()) : null;
-        this.render();
-      });
-      const upd = ()=>this.render();
-      card.querySelector('[data-f="g-"]').onclick = ()=>{ c.goal = clamp(c.goal-1,1,14); upd(); };
-      card.querySelector('[data-f="g+"]').onclick = ()=>{ c.goal = clamp(c.goal+1,1,14); upd(); };
-      card.querySelector('[data-f="s-"]').onclick = ()=>{ c.slots = Math.max(1,(c.slots||1)-1); upd(); };
-      card.querySelector('[data-f="s+"]').onclick = ()=>{ c.slots = Math.min(8,(c.slots||1)+1); upd(); };
-      bindChipConfig(card, ()=>c.chips, ()=>this.render());
-    }
-
     if(key==='recap'){
       this.paint('#33414D', '#F3EFE8');
       const goalSlots = this.weeklyGoalSlots();
@@ -830,7 +952,7 @@ const OB = {
             <span class="drag-h" style="color:rgba(51,65,77,.5)" aria-label="Drag to reorder">⠿</span>
             <span class="swatch" style="background:${p.light};border:none;width:32px;height:32px;border-radius:10px;--swk:${iconInkFor(c, p.light)}">${ic(c.icon)}</span>
             <strong style="flex:1;color:#33414D">${esc(c.name)}</strong>
-            <span class="mono" style="font-size:12.5px;color:rgba(51,65,77,.65)">${c.goal}×/wk · ${c.slots||1} slot${(c.slots||1)>1?'s':''} = ${c.goal*(c.slots||1)}</span>
+            <span class="mono" style="font-size:12.5px;color:rgba(51,65,77,.65)">${c.slots||1} slot${(c.slots||1)>1?'s':''} · ${c.goal}×/wk = ${c.goal*(c.slots||1)}</span>
             <span class="cr-pencil" style="color:rgba(51,65,77,.55)">${ic('pen')}</span>
           </div>`; }).join('')}</div>
         <div class="bc-label" style="margin-top:18px">Slots you'll give one day</div>
@@ -924,7 +1046,7 @@ function starterGuess(name, icon){
   const n = (name||'').trim().toLowerCase();
   let cands = n ? STARTERS.filter(s=>{ const sn=s.name.toLowerCase(); return sn===n || n.includes(sn) || sn.includes(n); }) : [];
   if(cands.length>1){ const im = cands.find(s=>s.icon===icon); if(im) cands = [im]; }
-  const st = cands[0] || STARTERS.find(s=>s.icon===icon) || null;
+  const st = cands[0] || (icon!=='star' && STARTERS.find(s=>s.icon===icon)) || null; // 'star' is the untouched default — no signal
   return st ? {goal:st.goal, slots:st.slots||1, chips:st.chips?{...st.chips}:null}
             : {goal:3, slots:1, chips:null};
 }
@@ -942,27 +1064,26 @@ function bucketEditorHTML(c, opts={}){
       <button class="swatch" data-f="look" style="width:46px;height:46px;background:${p.fill};border-color:${p.edge};--swk:${iconInkFor(c,p.fill)}" title="Change look">${ic(c.icon)}</button>
       <input type="text" data-f="bname" value="${esc(c.name)}" aria-label="Bucket name" style="font-weight:700;font-size:17px">
     </div>
-    ${chipsHost ? `<div class="be-lab">How does it happen?</div>
+    ${chipsHost ? `<div class="be-lab">How does ${esc(c.name)} happen?</div>
     <div class="mode-pick">
       <button type="button" class="mode-card ${!chipsHost.chips?'on':''}" data-mode="chunk">
-        <strong>In chunks</strong>
-        <span>One outing, one block —<br>the gym, or coffee<br>with a friend.</span>
+        <strong>Start to Finish</strong>
+        <span>One block of time — gym, coffee, meditation.</span>
       </button>
       <button type="button" class="mode-card ${chipsHost.chips?'on':''}" data-mode="allday">
-        <strong>Throughout<br>the day</strong>
-        <span>Small chunks that<br>add up — calories,<br>water, gratitude.</span>
+        <strong>Ongoing</strong>
+        <span>Small chunks that add up — water, calories, gratitude.</span>
       </button>
     </div>
-    <div data-f="chipcfg">${chipConfigHTML(chipsHost.chips)}</div>` : ''}
-    <div class="be-lab">Blocks per week<span>${(chipsHost&&chipsHost.chips)?'How many days do you want to track this habit during the&nbsp;week?':'How many times a week do you want to complete a&nbsp;block?'}${isDraft?'':' Changes land when you restack.'}</span></div>
-    <div class="stepper"><button data-f="g-">−</button><span class="val">${goal}</span><button data-f="g+">＋</button></div>
-    <div class="be-lab">Block size<span>Scales with how long it takes to complete.</span></div>
+    <div data-f="chipcfg">${chipConfigHTML(chipsHost.chips, goal)}</div>` : ''}
+    ${(chipsHost&&chipsHost.chips)?'':`<div class="be-lab">How many times a week?<span>This adds blocks to claim each week.${isDraft?'':' Changes land when you restack.'}</span></div>
+    <div class="stepper"><button data-f="g-">−</button><span class="val">${goal}</span><button data-f="g+">＋</button></div>`}
+    <div class="be-lab">How long does it take to complete?<span>This sets the size of your blocks for this bucket.</span></div>
     <div class="stepper"><button data-f="s-">−</button><span class="val">${slots} slot${slots>1?'s':''}</span><button data-f="s+">＋</button></div>
     <div class="be-lab">Icon color</div>
-    <div class="seg segsw" data-f="ink">
-      <button data-k="auto" class="${(c.iconInk||'auto')==='auto'?'on':''}">Auto</button>
-      <button data-k="ink" class="${c.iconInk==='ink'?'on':''}" aria-label="Ink" title="Ink"><i style="background:#33414D;box-shadow:inset 0 0 0 1px var(--hairline)"></i></button>
-      <button data-k="paper" class="${c.iconInk==='paper'?'on':''}" aria-label="Paper" title="Paper"><i style="background:#FDFBF7;box-shadow:inset 0 0 0 1px var(--hairline)"></i></button>
+    <div class="seg segsw" data-f="ink">${(eff=>`
+      <button data-k="ink" class="${eff==='ink'?'on':''}" aria-label="Ink" title="Ink"><i style="background:#33414D;box-shadow:inset 0 0 0 1px var(--hairline)"></i></button>
+      <button data-k="paper" class="${eff==='paper'?'on':''}" aria-label="Paper" title="Paper"><i style="background:#FDFBF7;box-shadow:inset 0 0 0 1px var(--hairline)"></i></button>`)(c.iconInk || (inkFor(p.fill)==='#33414D'?'ink':'paper'))}
     </div>
     <div class="be-lab">Notes</div>
     <textarea data-f="notes" placeholder="e.g. 3× = 2 swim + 1 yoga">${esc((isDraft?c.notes:bk&&bk.notes)||'')}</textarea>
@@ -983,19 +1104,20 @@ function bindBucketEditor(root, c, opts={}){
   const onClose = opts.onClose || (()=>{});
   const commit = ()=>{ if(!isDraft) save(); onChange(); };   // onChange re-renders the host list
   const f = k => root.querySelector(`[data-f="${k}"]`);
-  f('look').onclick = ()=>openColorPicker(c, ()=>commit());
+  const on = (k,fn)=>{ const el = f(k); if(el) el.onclick = fn; };
+  const setGoal = v=>{ if(isDraft){ c.goal = clamp(v,1,14); } else { S.nextGoals[c.id] = clamp(v,1,14); } };
+  on('look', ()=>openColorPicker(c, ()=>commit()));
   f('bname').onchange = e=>{
     const nm = e.target.value.trim(); if(!nm) return;
     c.name = nm; if(isDraft) c.bucketName = nm; if(bk) bk.name = nm;
     commit();
   };
-  f('g-').onclick = ()=>{ if(isDraft){ c.goal = clamp(c.goal-1,1,14); } else { S.nextGoals[c.id] = clamp((S.nextGoals[c.id]??c.goal)-1,1,14); } commit(); };
-  f('g+').onclick = ()=>{ if(isDraft){ c.goal = clamp(c.goal+1,1,14); } else { S.nextGoals[c.id] = clamp((S.nextGoals[c.id]??c.goal)+1,1,14); } commit(); };
-  f('s-').onclick = ()=>{ c[slotKey] = Math.max(1,(c[slotKey]||1)-1); commit(); };
-  f('s+').onclick = ()=>{ c[slotKey] = Math.min(8,(c[slotKey]||1)+1); commit(); };
+  on('g-', ()=>{ setGoal((isDraft ? c.goal : (S.nextGoals[c.id]??c.goal))-1); commit(); });
+  on('g+', ()=>{ setGoal((isDraft ? c.goal : (S.nextGoals[c.id]??c.goal))+1); commit(); });
+  on('s-', ()=>{ c[slotKey] = Math.max(1,(c[slotKey]||1)-1); commit(); });
+  on('s+', ()=>{ c[slotKey] = Math.min(8,(c[slotKey]||1)+1); commit(); });
   root.querySelectorAll('[data-f="ink"] button').forEach(el=>el.onclick = ()=>{
-    c.iconInk = el.dataset.k==='auto' ? null : el.dataset.k;
-    if(c.iconInk===null) delete c.iconInk;
+    c.iconInk = el.dataset.k;
     commit();
   });
   if(chipsHost){
@@ -1003,7 +1125,7 @@ function bindBucketEditor(root, c, opts={}){
       chipsHost.chips = btn.dataset.mode==='allday' ? (chipsHost.chips||freshChunks()) : null;
       commit();
     });
-    bindChipConfig(root, ()=>chipsHost.chips, ()=>commit());
+    bindChipConfig(root, ()=>chipsHost.chips, ()=>commit(), {set:setGoal});
   }
   f('notes').onchange = e=>{ if(isDraft) c.notes = e.target.value; if(bk) bk.notes = e.target.value; commit(); };
   f('del').onclick = ()=>{
@@ -2262,6 +2384,17 @@ const Receipts = {
 /* ═════════ SETTINGS ═════════ */
 const Settings = {
   open(){ this.editingId = null; this.newDraft = null; show('#screen-settings'); this.render(); },
+  /* the recap fit check, permanent: goals in day-slots vs what one day can hold */
+  fitHTML(){
+    const goalSlots = S.colors.reduce((a,c)=>a+((S.nextGoals[c.id]??c.goal)*(c.slotSize||1)),0);
+    const capacity = S.day.maxSlots*7;
+    const fits = goalSlots <= capacity;
+    return `<div class="fit-card ${fits?'ok':'over'}" id="setFitCard">
+      <div><strong>${goalSlots}</strong> slots of goals per week</div>
+      <div><strong>${capacity}</strong> slots you'd have (${S.day.maxSlots} × 7 days)</div>
+      <div class="fit-verdict">${fits ? '✓ It fits — with '+(capacity-goalSlots)+' slots of air.' : '✕ Over by '+(goalSlots-capacity)+' — shrink a goal or give days more room.'}</div>
+    </div>`;
+  },
   addBucket(){
     if(S.colors.length>=6){ toast('Six buckets max — keep it holdable.'); return; }
     const bpKey = S.settings.blockPal||'brand';
@@ -2310,8 +2443,6 @@ const Settings = {
             <input type="time" id="setTime" value="${S.settings.roundupTime}"></div>
           <div class="set-row"><span class="grow">Sounds</span>
             <label class="switch"><input type="checkbox" id="setSound" ${S.settings.sound?'checked':''}><span class="knob"></span></label></div>
-          <div class="set-row"><span class="grow">Today's slot budget</span>
-            <div class="stepper"><button id="setSlotsM">−</button><span class="val" id="setSlotsV">${S.day.maxSlots}</span><button id="setSlotsP">＋</button></div></div>
           <div class="set-row"><span class="grow">Plan tomorrow ahead</span>
             <label class="switch"><input type="checkbox" id="setPlanTmrw" ${S.settings.planTomorrow?'checked':''}><span class="knob"></span></label></div>
           <div class="set-note">Kachunk sends exactly one notification a day — the Roundup — and only when the app can. On iPhone, Add to Home Screen first. “Plan tomorrow ahead” lets new picks pre-fill tomorrow’s shelf once today’s plan is fully banked.</div>
@@ -2333,6 +2464,16 @@ const Settings = {
         <div id="setColors">${S.colors.map(c=>this.colorRow(c)).join('')}${this.newDraft ? this.newCardHTML() : ''}</div>
         <button class="btn btn-ghost" id="addColor" style="width:100%" ${S.colors.length>=6?'disabled style="opacity:.5"':''}>${S.colors.length>=6?"Six\u2019s the max — swap one out to add another":`＋ Add a bucket (${S.colors.length}/6)`}</button>
         <div class="set-note" style="padding:8px 2px">Tap a bucket to edit everything about it. Drag ⠿ to reorder — palettes apply their colors in this order. Goal changes land when you restack.</div>
+      </div>
+      <div class="set-group"><h3>Does the week fit?</h3>
+        <div class="set-card" style="padding:4px 18px 14px">
+          <div class="bc-label" style="margin-top:12px">Slots you'll give one day</div>
+          <div style="display:flex;align-items:center;gap:14px">
+            <input type="range" id="setFitSlider" min="2" max="${Math.max(16,S.day.maxSlots)}" step="1" value="${S.day.maxSlots}" style="flex:1;accent-color:var(--ink)">
+            <span class="mono" style="font-size:20px;min-width:34px;text-align:center" id="setFitVal">${S.day.maxSlots}</span>
+          </div>
+        </div>
+        ${this.fitHTML()}
       </div>
       <div class="set-group"><h3>Voice</h3>
         ${Object.entries(VOICES).map(([k,v])=>`
@@ -2383,8 +2524,11 @@ const Settings = {
       if(S.settings.blockPal==='saved:'+delId){ S.settings.blockPal = 'brand'; applyBlockPalette('brand', S.colors); }
       save(); this.render(); Floor.syncBuckets(); Floor.rebuild();
     });
-    $('#setSlotsM').onclick = ()=>{ S.day.maxSlots = Math.max(1,S.day.maxSlots-1); save(); $('#setSlotsV').textContent = S.day.maxSlots; };
-    $('#setSlotsP').onclick = ()=>{ S.day.maxSlots = Math.min(24,S.day.maxSlots+1); save(); $('#setSlotsV').textContent = S.day.maxSlots; };
+    $('#setFitSlider').oninput = e=>{
+      S.day.maxSlots = +e.target.value; save();
+      $('#setFitVal').textContent = S.day.maxSlots;
+      const fc = $('#setFitCard'); if(fc) fc.outerHTML = this.fitHTML();
+    };
     $$('#setColors .color-row').forEach(row=>{
       const c = S.colors.find(x=>x.id===row.dataset.c);
       row.onclick = e=>{
