@@ -173,6 +173,10 @@ h1,h2,h3{font-family:"Bricolage Grotesque",system-ui,sans-serif; font-weight:700
 .cr-name{flex:1; font-weight:700; font-size:15.5px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .cr-meta{font-size:11.5px; color:var(--muted); flex:none;}
 .cr-chev{color:var(--muted); font-size:19px; flex:none; padding-left:2px; opacity:.7;}
+.cr-pencil{color:var(--muted); flex:none; opacity:.75; padding-left:2px; display:flex; align-items:center;}
+.cr-pencil svg{width:16px; height:16px; stroke:currentColor; stroke-width:1.3; fill:none; stroke-linecap:round; stroke-linejoin:round;}
+.be-card{border-color:rgba(221,124,84,.5);}
+#recapList .be-card{color:var(--ink); margin-bottom:10px;}
 .drag-h{
   flex:none; color:var(--muted); opacity:.65; font-size:15px; letter-spacing:1px;
   padding:8px 6px 8px 2px; cursor:grab; user-select:none; -webkit-user-select:none;

@@ -825,12 +825,13 @@ const OB = {
       b.innerHTML = `
         <h2 class="ob-title">Does the week fit?</h2>
         <p class="ob-sub">Your goals, in day-slots — against what one of your days can hold.</p>
-        <div class="paper-list" id="recapList">${d.colors.map(c=>{ const p = palFor(c); return `
+        <div class="paper-list" id="recapList">${d.colors.map(c=>{ if(this.recapEdit===c.id) return bucketEditorHTML(c, {draft:true}); const p = palFor(c); return `
           <div class="recap-row" data-ord="${c.id}" style="background:${p.fill}">
             <span class="drag-h" style="color:rgba(51,65,77,.5)" aria-label="Drag to reorder">⠿</span>
             <span class="swatch" style="background:${p.light};border:none;width:32px;height:32px;border-radius:10px;--swk:${iconInkFor(c, p.light)}">${ic(c.icon)}</span>
             <strong style="flex:1;color:#33414D">${esc(c.name)}</strong>
             <span class="mono" style="font-size:12.5px;color:rgba(51,65,77,.65)">${c.goal}×/wk · ${c.slots||1} slot${(c.slots||1)>1?'s':''} = ${c.goal*(c.slots||1)}</span>
+            <span class="cr-pencil" style="color:rgba(51,65,77,.55)">${ic('pen')}</span>
           </div>`; }).join('')}</div>
         <div class="bc-label" style="margin-top:18px">Slots you'll give one day</div>
         <div style="display:flex;align-items:center;gap:14px">
@@ -847,9 +848,16 @@ const OB = {
         const c = d.colors.find(x=>x.id===row.dataset.ord);
         row.onclick = e=>{
           if(e.target.closest('.drag-h')) return;
-          openBucketEditor(c, {draft:true, draftColors:d.colors, onChange:()=>this.render()});
+          this.recapEdit = (this.recapEdit===c.id) ? null : c.id;
+          this.render();
         };
       });
+      const beRecap = $('#recapList .be-card[data-be]');
+      if(beRecap){
+        const c = d.colors.find(x=>x.id===beRecap.dataset.be);
+        bindBucketEditor(beRecap, c, {draft:true, draftColors:d.colors,
+          onChange: ()=>this.render(), onClose: ()=>{ this.recapEdit = null; }});
+      }
       enableReorder($('#recapList'), ids=>{
         d.colors.sort((a,b)=>ids.indexOf(a.id)-ids.indexOf(b.id));
         if(d.palKey && d.palKey!=='custom') applyBlockPalette(d.palKey, d.colors, d.customPal); // colors follow the new order
@@ -911,88 +919,104 @@ const OB = {
   back(){ if(this.step===0){ this.paint(null); show('#screen-splash'); return; } this.step--; this.render(); }
 };
 
-/* ── one modal edits everything about a bucket (settings rows + recap rows tap into this) ── */
-function openBucketEditor(c, opts={}){
+/* ── inline bucket editor — expands inside the card (settings rows + recap rows), no modal ── */
+function starterGuess(name, icon){
+  const n = (name||'').trim().toLowerCase();
+  let cands = n ? STARTERS.filter(s=>{ const sn=s.name.toLowerCase(); return sn===n || n.includes(sn) || sn.includes(n); }) : [];
+  if(cands.length>1){ const im = cands.find(s=>s.icon===icon); if(im) cands = [im]; }
+  const st = cands[0] || STARTERS.find(s=>s.icon===icon) || null;
+  return st ? {goal:st.goal, slots:st.slots||1, chips:st.chips?{...st.chips}:null}
+            : {goal:3, slots:1, chips:null};
+}
+
+function bucketEditorHTML(c, opts={}){
   const isDraft = !!opts.draft;
-  const bk = opts.bucket || null;                       // live-mode bucket (notes + chips live here)
-  const chipsHost = isDraft ? c : bk;                   // where .chips lives
+  const bk = opts.bucket || null;
+  const chipsHost = isDraft ? c : bk;
+  const slotKey = isDraft ? 'slots' : 'slotSize';
+  const p = palFor(c);
+  const goal = isDraft ? c.goal : (S.nextGoals[c.id] ?? c.goal);
+  const slots = c[slotKey]||1;
+  return `<div class="bucket-card be-card" data-be="${c.id}" data-ord="${c.id}">
+    <div class="bc-head">
+      <button class="swatch" data-f="look" style="width:46px;height:46px;background:${p.fill};border-color:${p.edge};--swk:${iconInkFor(c,p.fill)}" title="Change look">${ic(c.icon)}</button>
+      <input type="text" data-f="bname" value="${esc(c.name)}" aria-label="Bucket name" style="font-weight:700;font-size:17px">
+    </div>
+    ${chipsHost ? `<div class="be-lab">How does it happen?</div>
+    <div class="mode-pick">
+      <button type="button" class="mode-card ${!chipsHost.chips?'on':''}" data-mode="chunk">
+        <strong>In chunks</strong>
+        <span>One outing, one block —<br>the gym, or coffee<br>with a friend.</span>
+      </button>
+      <button type="button" class="mode-card ${chipsHost.chips?'on':''}" data-mode="allday">
+        <strong>Throughout<br>the day</strong>
+        <span>Small chunks that<br>add up — calories,<br>water, gratitude.</span>
+      </button>
+    </div>
+    <div data-f="chipcfg">${chipConfigHTML(chipsHost.chips)}</div>` : ''}
+    <div class="be-lab">Blocks per week<span>${(chipsHost&&chipsHost.chips)?'How many days do you want to track this habit during the&nbsp;week?':'How many times a week do you want to complete a&nbsp;block?'}${isDraft?'':' Changes land when you restack.'}</span></div>
+    <div class="stepper"><button data-f="g-">−</button><span class="val">${goal}</span><button data-f="g+">＋</button></div>
+    <div class="be-lab">Block size<span>Scales with how long it takes to complete.</span></div>
+    <div class="stepper"><button data-f="s-">−</button><span class="val">${slots} slot${slots>1?'s':''}</span><button data-f="s+">＋</button></div>
+    <div class="be-lab">Icon color</div>
+    <div class="seg segsw" data-f="ink">
+      <button data-k="auto" class="${(c.iconInk||'auto')==='auto'?'on':''}">Auto</button>
+      <button data-k="ink" class="${c.iconInk==='ink'?'on':''}" aria-label="Ink" title="Ink"><i style="background:#33414D;box-shadow:inset 0 0 0 1px var(--hairline)"></i></button>
+      <button data-k="paper" class="${c.iconInk==='paper'?'on':''}" aria-label="Paper" title="Paper"><i style="background:#FDFBF7;box-shadow:inset 0 0 0 1px var(--hairline)"></i></button>
+    </div>
+    <div class="be-lab">Notes</div>
+    <textarea data-f="notes" placeholder="e.g. 3× = 2 swim + 1 yoga">${esc((isDraft?c.notes:bk&&bk.notes)||'')}</textarea>
+    <div class="sheet-actions" style="margin-top:14px">
+      <button class="btn-danger" data-f="del" style="flex:none;padding:11px 16px">Remove</button>
+      <button class="btn btn-primary" data-f="done" style="flex:1">Done</button>
+    </div>
+  </div>`;
+}
+
+function bindBucketEditor(root, c, opts={}){
+  if(!root || !c) return;
+  const isDraft = !!opts.draft;
+  const bk = opts.bucket || null;
+  const chipsHost = isDraft ? c : bk;
   const slotKey = isDraft ? 'slots' : 'slotSize';
   const onChange = opts.onChange || (()=>{});
-  const commit = ()=>{ if(!isDraft) save(); onChange(); };
-  const render = ()=>{
-    const p = palFor(c);
-    const goal = isDraft ? c.goal : (S.nextGoals[c.id] ?? c.goal);
-    const slots = c[slotKey]||1;
-    Sheet.open(`
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
-        <button class="swatch" id="beLook" style="width:46px;height:46px;background:${p.fill};border-color:${p.edge};--swk:${iconInkFor(c,p.fill)}">${ic(c.icon)}</button>
-        <input type="text" id="beName" value="${esc(c.name)}" aria-label="Bucket name"
-          style="flex:1;min-width:0;border:none;background:var(--inset);border-radius:12px;padding:12px 14px;font:inherit;font-weight:700;font-size:17px;color:var(--ink)">
-      </div>
-      ${chipsHost ? `<div class="be-lab">How does it happen?</div>
-      <div class="mode-pick">
-        <button type="button" class="mode-card ${!chipsHost.chips?'on':''}" data-mode="chunk">
-          <strong>In chunks</strong>
-          <span>One outing, one block —<br>the gym, or coffee<br>with a friend.</span>
-        </button>
-        <button type="button" class="mode-card ${chipsHost.chips?'on':''}" data-mode="allday">
-          <strong>Throughout<br>the day</strong>
-          <span>Small chunks that<br>add up — calories,<br>water, gratitude.</span>
-        </button>
-      </div>
-      <div id="beChipCfg">${chipConfigHTML(chipsHost.chips)}</div>` : ''}
-      <div class="be-lab">Blocks per week<span>${(chipsHost&&chipsHost.chips)?'How many days do you want to track this habit during the&nbsp;week?':'How many times a week do you want to complete a&nbsp;block?'}${isDraft?'':' Changes land when you restack.'}</span></div>
-      <div class="stepper"><button id="beGm">−</button><span class="val" id="beGV">${goal}</span><button id="beGp">＋</button></div>
-      <div class="be-lab">Block size<span>Scales with how long it takes to complete.</span></div>
-      <div class="stepper"><button id="beSm">−</button><span class="val" id="beSV">${slots} slot${slots>1?'s':''}</span><button id="beSp">＋</button></div>
-      <div class="be-lab">Icon color</div>
-      <div class="seg segsw" id="beInk">
-        <button data-k="auto" class="${(c.iconInk||'auto')==='auto'?'on':''}">Auto</button>
-        <button data-k="ink" class="${c.iconInk==='ink'?'on':''}" aria-label="Ink" title="Ink"><i style="background:#33414D;box-shadow:inset 0 0 0 1px var(--hairline)"></i></button>
-        <button data-k="paper" class="${c.iconInk==='paper'?'on':''}" aria-label="Paper" title="Paper"><i style="background:#FDFBF7;box-shadow:inset 0 0 0 1px var(--hairline)"></i></button>
-      </div>
-      <div class="be-lab">Notes</div>
-      <textarea id="beNotes" placeholder="e.g. 3× = 2 swim + 1 yoga" style="width:100%;border:none;background:var(--inset);border-radius:12px;padding:11px 13px;font:inherit;font-size:14.5px;color:var(--ink);min-height:64px">${esc((isDraft?c.notes:bk&&bk.notes)||'')}</textarea>
-      <div class="sheet-actions" style="margin-top:16px">
-        <button class="btn-danger" id="beDelete" style="flex:none;padding:11px 16px">Remove</button>
-        <button class="btn btn-primary" id="beDone" style="flex:1">Done</button>
-      </div>`);
-    $('#beLook').onclick = ()=>openColorPicker(c, ()=>{ commit(); render(); });
-    $('#beName').onchange = e=>{
-      const nm = e.target.value.trim(); if(!nm) return;
-      c.name = nm; if(isDraft) c.bucketName = nm; if(bk) bk.name = nm;
-      commit();
-    };
-    $('#beGm').onclick = ()=>{ if(isDraft){ c.goal = clamp(c.goal-1,1,14); } else { S.nextGoals[c.id] = clamp((S.nextGoals[c.id]??c.goal)-1,1,14); } commit(); $('#beGV').textContent = isDraft?c.goal:S.nextGoals[c.id]; };
-    $('#beGp').onclick = ()=>{ if(isDraft){ c.goal = clamp(c.goal+1,1,14); } else { S.nextGoals[c.id] = clamp((S.nextGoals[c.id]??c.goal)+1,1,14); } commit(); $('#beGV').textContent = isDraft?c.goal:S.nextGoals[c.id]; };
-    $('#beSm').onclick = ()=>{ c[slotKey] = Math.max(1,(c[slotKey]||1)-1); commit(); const s=c[slotKey]; $('#beSV').textContent = `${s} slot${s>1?'s':''}`; };
-    $('#beSp').onclick = ()=>{ c[slotKey] = Math.min(8,(c[slotKey]||1)+1); commit(); const s=c[slotKey]; $('#beSV').textContent = `${s} slot${s>1?'s':''}`; };
-    $$('#beInk button').forEach(el=>el.onclick = ()=>{
-      c.iconInk = el.dataset.k==='auto' ? null : el.dataset.k;
-      if(c.iconInk===null) delete c.iconInk;
-      commit(); render();
-    });
-    if(chipsHost){
-      $$('#sheet .mode-card').forEach(btn=>btn.onclick = ()=>{
-        chipsHost.chips = btn.dataset.mode==='allday' ? (chipsHost.chips||freshChunks()) : null;
-        commit(); render();
-      });
-      bindChipConfig($('#sheet'), ()=>chipsHost.chips, ()=>{ commit(); render(); });
-    }
-    $('#beNotes').onchange = e=>{ if(isDraft) c.notes = e.target.value; if(bk) bk.notes = e.target.value; commit(); };
-    $('#beDelete').onclick = ()=>{
-      if(!confirm(`Remove the ${c.name} bucket${isDraft?'':' and its blocks'}?`)) return;
-      if(isDraft){ opts.draftColors.splice(opts.draftColors.indexOf(c),1); }
-      else {
-        S.colors = S.colors.filter(x=>x.id!==c.id);
-        S.buckets = S.buckets.filter(b=>b.colorId!==c.id);
-        S.week.blocks = S.week.blocks.filter(b=>b.colorId!==c.id);
-      }
-      commit(); Sheet.close();
-    };
-    $('#beDone').onclick = ()=>Sheet.close();
+  const onClose = opts.onClose || (()=>{});
+  const commit = ()=>{ if(!isDraft) save(); onChange(); };   // onChange re-renders the host list
+  const f = k => root.querySelector(`[data-f="${k}"]`);
+  f('look').onclick = ()=>openColorPicker(c, ()=>commit());
+  f('bname').onchange = e=>{
+    const nm = e.target.value.trim(); if(!nm) return;
+    c.name = nm; if(isDraft) c.bucketName = nm; if(bk) bk.name = nm;
+    commit();
   };
-  render();
+  f('g-').onclick = ()=>{ if(isDraft){ c.goal = clamp(c.goal-1,1,14); } else { S.nextGoals[c.id] = clamp((S.nextGoals[c.id]??c.goal)-1,1,14); } commit(); };
+  f('g+').onclick = ()=>{ if(isDraft){ c.goal = clamp(c.goal+1,1,14); } else { S.nextGoals[c.id] = clamp((S.nextGoals[c.id]??c.goal)+1,1,14); } commit(); };
+  f('s-').onclick = ()=>{ c[slotKey] = Math.max(1,(c[slotKey]||1)-1); commit(); };
+  f('s+').onclick = ()=>{ c[slotKey] = Math.min(8,(c[slotKey]||1)+1); commit(); };
+  root.querySelectorAll('[data-f="ink"] button').forEach(el=>el.onclick = ()=>{
+    c.iconInk = el.dataset.k==='auto' ? null : el.dataset.k;
+    if(c.iconInk===null) delete c.iconInk;
+    commit();
+  });
+  if(chipsHost){
+    root.querySelectorAll('.mode-card').forEach(btn=>btn.onclick = ()=>{
+      chipsHost.chips = btn.dataset.mode==='allday' ? (chipsHost.chips||freshChunks()) : null;
+      commit();
+    });
+    bindChipConfig(root, ()=>chipsHost.chips, ()=>commit());
+  }
+  f('notes').onchange = e=>{ if(isDraft) c.notes = e.target.value; if(bk) bk.notes = e.target.value; commit(); };
+  f('del').onclick = ()=>{
+    if(!confirm(`Remove the ${c.name} bucket${isDraft?'':' and its blocks'}?`)) return;
+    if(isDraft){ opts.draftColors.splice(opts.draftColors.indexOf(c),1); }
+    else {
+      S.colors = S.colors.filter(x=>x.id!==c.id);
+      S.buckets = S.buckets.filter(b=>b.colorId!==c.id);
+      S.week.blocks = S.week.blocks.filter(b=>b.colorId!==c.id);
+    }
+    onClose(); commit();
+  };
+  f('done').onclick = ()=>{ onClose(); onChange(); };
 }
 
 /* horizontal drag-to-reorder (palette preview dots) */
@@ -2237,31 +2261,37 @@ const Receipts = {
 
 /* ═════════ SETTINGS ═════════ */
 const Settings = {
-  open(){ show('#screen-settings'); this.render(); },
-  addBucket(fromBoard=false){
+  open(){ this.editingId = null; this.newDraft = null; show('#screen-settings'); this.render(); },
+  addBucket(){
     if(S.colors.length>=6){ toast('Six buckets max — keep it holdable.'); return; }
     const bpKey = S.settings.blockPal||'brand';
     let hexes;
     if(bpKey==='custom') hexes = (S.settings.customPal&&S.settings.customPal.length===6)?S.settings.customPal:blockPalByKey('brand').hex;
     else if(bpKey.startsWith('saved:')){ const sp=(S.settings.savedPals||[]).find(p=>'saved:'+p.id===bpKey); hexes = (sp&&sp.hex)||blockPalByKey('brand').hex; }
     else hexes = blockPalByKey(bpKey).hex;
-    const used = new Set(S.colors.map(x=>x.name.toLowerCase()));
-    const st = STARTERS.find(s=>!used.has(s.name.toLowerCase())) || {name:'New thing', icon:'star', goal:3, slots:1, chips:null};
-    const c = {id:uid(), name:st.name, icon:st.icon, pal:PALETTE[S.colors.length%6].key,
-      customHex: bpKey==='pastel' ? null : hexes[S.colors.length%6], shape:'cube', goal:st.goal, slotSize:st.slots||1};
-    S.colors.push(c);
-    const bucket = {id:uid(), colorId:c.id, name:c.name, notes:'', chips:st.chips?{...st.chips}:null};
-    S.buckets.push(bucket);
-    for(let i=0;i<c.goal;i++) S.week.blocks.push({id:uid(), colorId:c.id, status:'tray', via:null, ts:null});
-    save();
-    if(fromBoard){
-      Floor.syncBuckets(); Floor.rebuild();
-      openBucketEditor(c, {bucket, onChange: ()=>{ Floor.syncBuckets(); Floor.rebuild(); Renderer3D.refreshColor(); }});
-    } else { this.render(); Floor.rebuild(); }
+    this.editingId = null;
+    this.newDraft = {id:uid(), name:'', icon:'star', pal:PALETTE[S.colors.length%6].key,
+      customHex: bpKey==='pastel' ? null : hexes[S.colors.length%6], shape:'cube'};
+    this.render();
+  },
+  newCardHTML(){
+    const nd = this.newDraft; const p = palFor(nd);
+    return `<div class="bucket-card be-card be-new">
+      <div class="bc-head">
+        <button class="swatch" data-f="look" style="width:46px;height:46px;background:${p.fill};border-color:${p.edge};--swk:${iconInkFor(nd,p.fill)}" title="Change look">${ic(nd.icon)}</button>
+        <input type="text" data-f="bname" placeholder="Name your bucket" aria-label="Bucket name" style="font-weight:700;font-size:17px">
+      </div>
+      <div class="set-note" style="padding:6px 2px 0">Icon + name together give the best starting guess — everything's tunable after.</div>
+      <div class="sheet-actions" style="margin-top:12px">
+        <button class="btn btn-ghost" data-f="cancel" style="flex:none;padding:11px 16px">Cancel</button>
+        <button class="btn btn-primary" data-f="create" style="flex:1">Create</button>
+      </div>
+    </div>`;
   },
   colorRow(c){
     const p = palFor(c);
     const bk = S.buckets.find(b=>b.colorId===c.id);
+    if(this.editingId===c.id) return bucketEditorHTML(c, {bucket:bk});
     const goal = S.nextGoals[c.id] ?? c.goal;
     const meta = [`${goal}×/wk`, (c.slotSize||1)>1?`${c.slotSize} slots`:null, (bk&&bk.chips)?'small chunks':null].filter(Boolean).join(' · ');
     return `<div class="color-row cr-tap" data-c="${c.id}" data-ord="${c.id}" role="button">
@@ -2269,7 +2299,7 @@ const Settings = {
       <span class="swatch" style="background:${p.fill};border-color:${p.edge};--swk:${iconInkFor(c, p.fill)}">${ic(c.icon)}</span>
       <span class="cr-name">${esc(c.name)}</span>
       <span class="cr-meta mono">${meta}</span>
-      <span class="cr-chev">›</span>
+      <span class="cr-pencil" aria-hidden="true">${ic('pen')}</span>
     </div>`;
   },
   render(){
@@ -2300,7 +2330,7 @@ const Settings = {
         <div class="set-note">Switching re-bases every bucket to the new palette, in order. Build your own to name &amp; save palettes.</div>
       </div>
       <div class="set-group"><h3>Buckets & goals</h3>
-        <div id="setColors">${S.colors.map(c=>this.colorRow(c)).join('')}</div>
+        <div id="setColors">${S.colors.map(c=>this.colorRow(c)).join('')}${this.newDraft ? this.newCardHTML() : ''}</div>
         <button class="btn btn-ghost" id="addColor" style="width:100%" ${S.colors.length>=6?'disabled style="opacity:.5"':''}>${S.colors.length>=6?"Six\u2019s the max — swap one out to add another":`＋ Add a bucket (${S.colors.length}/6)`}</button>
         <div class="set-note" style="padding:8px 2px">Tap a bucket to edit everything about it. Drag ⠿ to reorder — palettes apply their colors in this order. Goal changes land when you restack.</div>
       </div>
@@ -2359,10 +2389,43 @@ const Settings = {
       const c = S.colors.find(x=>x.id===row.dataset.c);
       row.onclick = e=>{
         if(e.target.closest('.drag-h')) return;
-        openBucketEditor(c, {bucket: S.buckets.find(b=>b.colorId===c.id),
-          onChange: ()=>{ this.render(); Floor.syncBuckets(); Floor.rebuild(); Renderer3D.refreshColor(); }});
+        this.editingId = (this.editingId===c.id) ? null : c.id;
+        this.newDraft = null;
+        this.render();
       };
     });
+    const beRoot = $('#setColors .be-card[data-be]');
+    if(beRoot){
+      const bc = S.colors.find(x=>x.id===beRoot.dataset.be);
+      bindBucketEditor(beRoot, bc, {
+        bucket: S.buckets.find(b=>b.colorId===bc.id),
+        onChange: ()=>{ this.render(); Floor.syncBuckets(); Floor.rebuild(); Renderer3D.refreshColor(); },
+        onClose: ()=>{ this.editingId = null; }
+      });
+    }
+    const ndRoot = $('#setColors .be-new');
+    if(ndRoot){
+      const nd = this.newDraft;
+      const nameI = ndRoot.querySelector('[data-f=bname]');
+      nameI.value = nd.name||'';
+      nameI.oninput = e=>{ nd.name = e.target.value; };
+      const createIt = ()=>{
+        const nm = (nd.name||'').trim(); if(!nm){ toast('Give it a name first.'); return; }
+        const g = starterGuess(nm, nd.icon);
+        const c = {id:nd.id, name:nm, icon:nd.icon, pal:nd.pal, customHex:nd.customHex||null, shape:'cube', goal:g.goal, slotSize:g.slots};
+        S.colors.push(c);
+        S.buckets.push({id:uid(), colorId:c.id, name:nm, notes:'', chips:g.chips});
+        for(let i=0;i<c.goal;i++) S.week.blocks.push({id:uid(), colorId:c.id, status:'tray', via:null, ts:null});
+        save();
+        this.newDraft = null; this.editingId = c.id;
+        this.render(); Floor.syncBuckets(); Floor.rebuild();
+      };
+      nameI.onkeydown = e=>{ if(e.key==='Enter') createIt(); };
+      ndRoot.querySelector('[data-f=look]').onclick = ()=>openColorPicker(nd, ()=>this.render());
+      ndRoot.querySelector('[data-f=create]').onclick = createIt;
+      ndRoot.querySelector('[data-f=cancel]').onclick = ()=>{ this.newDraft = null; this.render(); };
+      if(!nd.name) setTimeout(()=>nameI.focus(), 60);
+    }
     enableReorder($('#setColors'), ids=>{
       S.colors.sort((a,b)=>ids.indexOf(a.id)-ids.indexOf(b.id));
       S.buckets.sort((a,b)=>ids.indexOf(a.colorId)-ids.indexOf(b.colorId));
