@@ -93,8 +93,13 @@ const PICKER_COLORS = [
 ];
 /* re-base every color to the chosen palette by slot order (custom hexes get replaced) */
 function applyBlockPalette(key, colors, customHexes){
-  if(key==='custom'){
-    const hx = (customHexes && customHexes.length) ? customHexes : blockPalByKey('brand').hex;
+  if(key==='custom' || (key && key.startsWith('saved:'))){
+    let hx = customHexes;
+    if(key.startsWith('saved:')){
+      const sp = (S.settings.savedPals||[]).find(p=>'saved:'+p.id===key);
+      hx = sp && sp.hex;
+    }
+    if(!hx || !hx.length) hx = blockPalByKey('brand').hex;
     colors.forEach((c,i)=>{ c.customHex = hx[i%hx.length]; });
     return;
   }
@@ -102,6 +107,20 @@ function applyBlockPalette(key, colors, customHexes){
   colors.forEach((c,i)=>{
     if(key==='pastel'){ c.customHex = null; c.pal = PALETTE[i%6].key; }
     else c.customHex = bp.hex[i%6];
+  });
+}
+function savedCardHTML(sp, on){
+  return `<button class="pal-card ${on?'on':''}" data-bp="saved:${sp.id}">
+    <span><span class="pc-name">${esc(sp.name)}</span><span class="pc-hint">saved by you</span></span>
+    <span class="pal-dots">${sp.hex.map(palDot).join('')}</span>
+    <span class="sp-del" data-del="${sp.id}" role="button" aria-label="Delete palette">✕</span>
+  </button>`;
+}
+function bindSavedPalDeletes(rootSel, onChange){
+  $$(rootSel+' .sp-del').forEach(el=>el.onclick = e=>{
+    e.stopPropagation();
+    S.settings.savedPals = (S.settings.savedPals||[]).filter(p=>p.id!==el.dataset.del);
+    save(); onChange(el.dataset.del);
   });
 }
 function palDot(h){ return `<i style="background:${h};box-shadow:inset 0 -3px 0 ${shade(h,-0.22)}"></i>`; }
@@ -120,7 +139,7 @@ function customCardHTML(sel, on){
   </button>`;
 }
 /* full-screen picker sheet: 4 shades per hue, 2 hues per row (8 swatches), plus a free hex tile */
-function openCustomPicker(getSel, setSel, onComplete, onClose){
+function openCustomPicker(getSel, setSel, onComplete, onClose, onSaved){
   const paint = ()=>{
     const sel = getSel();
     const slots = Array.from({length:6},(_,i)=> sel[i] ? palDot(sel[i]) : '<i class="empty"></i>').join('');
@@ -144,10 +163,23 @@ function openCustomPicker(getSel, setSel, onComplete, onClose){
       <label class="cb-sw cb-any" title="Any color"><input type="color" id="cbpAny" value="#8A64C8"><span>＋ any</span></label>
     </div>
     <div class="cb-hint" id="cbpHint"></div>
-    <button class="btn btn-primary" id="cbpDone" style="width:100%;margin-top:14px">Done</button>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <input type="text" id="cbpName" placeholder="Name it to save it…" maxlength="22"
+        style="flex:1;border:none;background:var(--inset);border-radius:12px;padding:11px 14px;font:inherit;font-size:14.5px;color:var(--ink)">
+      <button class="btn btn-ghost" id="cbpSave" style="flex:none;padding:11px 18px">Save</button>
+    </div>
+    <button class="btn btn-primary" id="cbpDone" style="width:100%;margin-top:12px">Done</button>
   `, {onClose});
   $$('#cbpGrid .cb-sw[data-h]').forEach(el=>el.onclick = ()=>tap(el.dataset.h));
   $('#cbpAny').onchange = e=>tap(e.target.value.toUpperCase());
+  $('#cbpSave').onclick = ()=>{
+    const sel = getSel();
+    if(sel.length!==6) return toast('Pick all six first — then save.');
+    const sp = {id:uid(), name:($('#cbpName').value.trim()||'My palette'), hex:[...sel]};
+    S.settings.savedPals = (S.settings.savedPals||[]).concat([sp]); save();
+    if(onSaved) onSaved('saved:'+sp.id);
+    Sheet.close();
+  };
   $('#cbpDone').onclick = ()=>Sheet.close();
   paint();
 }
@@ -507,6 +539,7 @@ const OB = {
         <h2 class="ob-title">Choose your block colors</h2>
         <p class="ob-sub">Six colors that go together. Your buckets wear them in order — you can re-pick any time in Settings.</p>
         ${BLOCK_PALETTES.map(bp=>palCardHTML(bp, (d.palKey||'brand')===bp.key)).join('')}
+        ${(S.settings.savedPals||[]).map(sp=>savedCardHTML(sp, (d.palKey||'brand')==='saved:'+sp.id)).join('')}
         ${customCardHTML(d.customPal, (d.palKey||'brand')==='custom')}
         <div class="set-note" style="padding:6px 4px">Mono makes every block the same — the icons carry the meaning.</div>`;
       $$('#obBody .pal-card').forEach(el=>el.onclick=()=>{
@@ -515,7 +548,12 @@ const OB = {
         this.render();
         openCustomPicker(()=>d.customPal, sel=>{ d.customPal = sel; },
           sel=>applyBlockPalette('custom', d.colors, sel),
-          ()=>this.render());
+          ()=>this.render(),
+          key=>{ d.palKey = key; applyBlockPalette(key, d.colors); });
+      });
+      bindSavedPalDeletes('#obBody', delId=>{
+        if(d.palKey==='saved:'+delId){ d.palKey = 'brand'; applyBlockPalette('brand', d.colors); }
+        this.render();
       });
     }
 
@@ -654,8 +692,19 @@ function openColorPicker(c, onDone){
   Sheet.open(`
     <h3>Looks</h3>
     <p class="sh-sub">Color + icon. The palette keeps things calm — or go rogue with your own hex.</p>
-    <div style="display:flex;flex-wrap:wrap;gap:10px">${PALETTE.map(p=>`
-      <button class="pickdot" data-k="${p.key}" title="${p.name}" aria-label="${p.name}" style="width:46px;height:46px;border-radius:14px;background:${p.fill};border:3px solid ${(!c.customHex&&c.pal===p.key)?'var(--ink)':p.edge};cursor:pointer"></button>`).join('')}
+    <div style="display:flex;flex-wrap:wrap;gap:10px">${(()=>{
+      // offer the ACTIVE palette's six, not always the pastels (draft palette mid-onboarding)
+      const inOB = typeof OB!=='undefined' && OB.draft && document.querySelector('#screen-onboard.active');
+      const key = inOB ? (OB.draft.palKey||'brand') : (S.settings.blockPal||'brand');
+      if(key==='pastel') return PALETTE.map(p=>`
+        <button class="pickdot" data-k="${p.key}" title="${p.name}" aria-label="${p.name}" style="width:46px;height:46px;border-radius:14px;background:${p.fill};border:3px solid ${(!c.customHex&&c.pal===p.key)?'var(--ink)':p.edge};cursor:pointer"></button>`).join('');
+      let hx;
+      if(key==='custom'){ const cp = inOB ? OB.draft.customPal : S.settings.customPal; hx = (cp&&cp.length===6)?cp:blockPalByKey('brand').hex; }
+      else if(key.startsWith('saved:')){ const sp=(S.settings.savedPals||[]).find(p=>'saved:'+p.id===key); hx=(sp&&sp.hex)||blockPalByKey('brand').hex; }
+      else hx = blockPalByKey(key).hex;
+      return hx.map(h=>`
+        <button class="pickdot" data-hex="${h}" aria-label="${h}" style="width:46px;height:46px;border-radius:14px;background:${h};border:3px solid ${c.customHex===h?'var(--ink)':shade(h,-0.3)};cursor:pointer"></button>`).join('');
+    })()}
     </div>
     <div style="display:flex;align-items:center;gap:10px;margin-top:14px">
       <input type="color" id="pickCustom" value="${c.customHex||cur.fill}" aria-label="Custom color" style="width:46px;height:46px;border:2px solid var(--hairline);border-radius:12px;padding:2px;background:var(--surface);cursor:pointer">
@@ -670,7 +719,11 @@ function openColorPicker(c, onDone){
   };
   bindIcons();
   $('#iconSearch').oninput = e=>{ $('#iconGrid').innerHTML = iconGrid(e.target.value.trim().toLowerCase().replace(/[ -]/g,'_')); bindIcons(); };
-  $$('.pickdot').forEach(el=>el.onclick=()=>{ c.pal = el.dataset.k; delete c.customHex; Sheet.close(); onDone(); });
+  $$('.pickdot').forEach(el=>el.onclick=()=>{
+    if(el.dataset.hex){ c.customHex = el.dataset.hex; }
+    else { c.pal = el.dataset.k; delete c.customHex; }
+    Sheet.close(); onDone();
+  });
   $('#pickCustom').oninput = e=>{ $('#pickHex').value = e.target.value.toUpperCase(); };
   $('#pickUse').onclick = ()=>{
     const hex = ($('#pickHex').value || $('#pickCustom').value || '').trim();
@@ -919,8 +972,13 @@ const Floor = {
         if(py > this.planY() && py < this.floorY()+20){
           if(!DayB.isPlanned(block.id)){
             const cost = DayB.unitsOf(block.colorId);
-            if(DayB.used()+cost > S.day.maxSlots){
-              toast(`Today's full — ${S.day.maxSlots} slots. Protect the plan.`, {ms:2600});
+            const target = DayB.target();
+            if(target==='tomorrow' && !this._tomorrowToasted){
+              this._tomorrowToasted = true;
+              toast(`Today's banked — you're planning tomorrow now.`, {ms:2600});
+            }
+            if(DayB.used(target)+cost > S.day.maxSlots){
+              toast(`${target==='tomorrow'?'Tomorrow':'Today'}'s full — ${S.day.maxSlots} slots. Protect the plan.`, {ms:2600});
               Matter.Body.setPosition(body, {x:clamp(body.position.x,30,this.W-30), y:this.planY()-120});
               Matter.Body.setVelocity(body,{x:0,y:0});
             } else { DayB.setPlanned(block, true); sfx('slide'); buzz(8); }
@@ -1130,7 +1188,7 @@ const Floor = {
   capture(block, body, bucket, via){
     if(body){ Matter.World.remove(this.engine.world, body); this.bodies.delete(block.id); }
     block.status='dropped'; block.via=via; block.ts=new Date().toISOString();
-    DayB.dropFromPlan(block.id);
+    DayB.markDone(block.id); // banked planned blocks keep counting toward today
     save();
     sfx('drop'); buzz(18);
     const i = S.buckets.indexOf(bucket);
@@ -1170,7 +1228,7 @@ const Floor = {
         pal:palFor(c), shape:c.shape, icon:c.icon, label:c.name, size:this.sizeFor(colorId)*0.9,
         done:()=>{
           block.status='dropped'; block.via=via; block.ts=new Date().toISOString();
-          DayB.dropFromPlan(block.id);
+          DayB.markDone(block.id);
           save();
           sfx('drop'); buzz(10); this.syncBuckets(); this.updateHeader();
           this.burst(r.x+r.w/2, r.y+18, palFor(c), true);
@@ -1216,7 +1274,7 @@ const Floor = {
       pal:palFor(c), shape:c.shape, icon:c.icon, size:this.sizeFor(c.id)*0.9,
       done:()=>{
         block.status='dropped'; block.via='sweep'; block.ts=new Date().toISOString();
-        DayB.dropFromPlan(block.id); save();
+        DayB.markDone(block.id); save();
         sfx('drop'); buzz(12);
         this.burst(r.x+r.w/2, r.y+22, palFor(c));
         this.syncBuckets(); this.updateHeader(); this.updateSweepPop();
@@ -1233,6 +1291,16 @@ const Floor = {
     S.settings.sweepDismissed = null;
     spawnWeek(); this.exitSweep(); this.rebuild();
     sfx('fanfare'); toast(V().restacked, {ms:3000});
+  },
+
+  /* today's whole plan banked → confetti rain along the divider + fanfare */
+  dayCelebrate(){
+    const y = this.planY();
+    const pals = S.colors.map(c=>palFor(c));
+    [0.2,0.42,0.62,0.82].forEach((fx,k)=>{
+      setTimeout(()=>this.burst(this.W*fx, y, pals[k%pals.length]||{fill:'#DD7C54',light:'#F4C7BA',edge:'#B95F3D'}, true), k*130);
+    });
+    sfx('fanfare'); buzz(30); // celebration is physics + sound, never a message (D-16)
   },
 
   burst(x,y,pal,big=false){
@@ -1257,7 +1325,19 @@ const Floor = {
     x.beginPath(); x.moveTo(14,this.planY()); x.lineTo(this.W-14,this.planY()); x.stroke(); x.setLineDash([]);
     x.fillStyle = css.getPropertyValue('--muted').trim()||'#8B949B';
     x.font = '600 10.5px Figtree, sans-serif'; x.textAlign='right';
-    x.fillText(`TODAY ${DayB.used()}/${S.day.maxSlots}`, this.W-16, this.planY()+18);
+    {
+      // today: progress bar that fills as planned blocks get banked
+      const sched = DayB.used('today'), done = DayB.doneUnits(), tmrw = DayB.used('tomorrow');
+      const label = `TODAY ${done}/${sched||S.day.maxSlots}` + (tmrw ? `  ·  TMRW ${tmrw}/${S.day.maxSlots}` : '');
+      x.fillText(label, this.W-16, this.planY()+18);
+      const bw = 104, bx = this.W-16-bw, by = this.planY()+26;
+      x.strokeStyle = hair; x.lineWidth = 1; x.setLineDash([]);
+      x.beginPath(); x.roundRect(bx, by, bw, 7, 4); x.stroke();
+      if(sched && done){
+        x.fillStyle = css.getPropertyValue('--good').trim()||'#6F8F74';
+        x.beginPath(); x.roundRect(bx, by, Math.max(7, bw*Math.min(done/sched,1)), 7, 4); x.fill();
+      }
+    }
     x.strokeStyle = hair; x.lineWidth = 1.5; x.setLineDash([2,6]); x.lineCap='round';
       x.beginPath(); x.moveTo(14,this.planY()); x.lineTo(this.W-14,this.planY()); x.stroke(); x.setLineDash([]);
       x.fillStyle = css.getPropertyValue('--muted').trim()||'#8B949B';
@@ -1307,7 +1387,8 @@ const Floor = {
     }).join('');
     const doneN = S.week.blocks.filter(b=>b.status==='dropped').length;
     $('#floorHint').innerHTML = S.colors.length
-      ? `<div class="day-bar-wrap"><span class="day-bar-label">Week</span><div class="day-bar">${segs}</div><span class="day-bar-label">${doneN}/${S.week.blocks.length}</span></div>`
+      ? `<div class="day-bar-wrap"><span class="day-bar-label">Week</span><div class="day-bar">${segs}</div><span class="day-bar-label">${doneN}/${S.week.blocks.length}</span></div>
+         <div class="floor-whisper">Throw the blocks around — it's allowed. Drag one onto its bucket when it's done.</div>`
       : esc(V().empty);
     // sweep fab: end of week only, dismissable
     const fab = $('#btnRoundup');
@@ -1487,8 +1568,9 @@ const Settings = {
       </div>
       <div class="set-group"><h3>Block colors</h3>
         ${BLOCK_PALETTES.map(bp=>palCardHTML(bp, (S.settings.blockPal||'brand')===bp.key)).join('')}
+        ${(S.settings.savedPals||[]).map(sp=>savedCardHTML(sp, (S.settings.blockPal||'brand')==='saved:'+sp.id)).join('')}
         ${customCardHTML(S.settings.customPal||[], (S.settings.blockPal||'brand')==='custom')}
-        <div class="set-note">Switching re-bases every bucket to the new palette, in order. Per-bucket custom hexes get replaced.</div>
+        <div class="set-note">Switching re-bases every bucket to the new palette, in order. Build your own to name &amp; save palettes.</div>
       </div>
       <div class="set-group"><h3>Buckets & goals</h3>
         <div id="setColors">${S.colors.map(c=>this.colorRow(c)).join('')}</div>
@@ -1541,13 +1623,23 @@ const Settings = {
       openCustomPicker(()=>S.settings.customPal||[],
         sel=>{ S.settings.customPal = sel; save(); },
         sel=>{ applyBlockPalette('custom', S.colors, sel); save(); },
-        ()=>{ this.render(); Floor.syncBuckets(); Floor.rebuild(); });
+        ()=>{ this.render(); Floor.syncBuckets(); Floor.rebuild(); },
+        key=>{ S.settings.blockPal = key; applyBlockPalette(key, S.colors); save(); });
+    });
+    bindSavedPalDeletes('#settingsBody', delId=>{
+      if(S.settings.blockPal==='saved:'+delId){ S.settings.blockPal = 'brand'; applyBlockPalette('brand', S.colors); }
+      save(); this.render(); Floor.syncBuckets(); Floor.rebuild();
     });
     $('#setSlotsM').onclick = ()=>{ S.day.maxSlots = Math.max(1,S.day.maxSlots-1); save(); $('#setSlotsV').textContent = S.day.maxSlots; };
     $('#setSlotsP').onclick = ()=>{ S.day.maxSlots = Math.min(24,S.day.maxSlots+1); save(); $('#setSlotsV').textContent = S.day.maxSlots; };
     $$('#setColors .color-row').forEach(row=>{
       const c = S.colors.find(x=>x.id===row.dataset.c);
-      row.querySelector('input').onchange = e=>{ c.name = e.target.value.trim()||c.name; const bk=S.buckets.find(b=>b.colorId===c.id); save(); this.render(); };
+      row.querySelector('input').onchange = e=>{
+        const nm = e.target.value.trim(); if(!nm) return;
+        c.name = nm;
+        const bk = S.buckets.find(b=>b.colorId===c.id); if(bk) bk.name = nm;
+        save(); this.render(); Floor.syncBuckets();
+      };
       row.querySelector('[data-act="-"]').onclick = ()=>{ S.nextGoals[c.id] = clamp((S.nextGoals[c.id]??c.goal)-1,1,14); save(); this.renderGoalHint(row, c); };
       row.querySelector('[data-act="+"]').onclick = ()=>{ S.nextGoals[c.id] = clamp((S.nextGoals[c.id]??c.goal)+1,1,14); save(); this.renderGoalHint(row, c); };
       row.querySelector('[data-act="pal"]').onclick = ()=>openColorPicker(c, ()=>{ save(); this.render(); Floor.syncBuckets(); });
@@ -1562,7 +1654,10 @@ const Settings = {
     $('#addColor').onclick = ()=>{
       if(S.colors.length>=6) return toast('Six buckets max — keep it holdable.');
       const bpKey = S.settings.blockPal||'brand';
-      const hexes = bpKey==='custom' ? ((S.settings.customPal&&S.settings.customPal.length===6)?S.settings.customPal:blockPalByKey('brand').hex) : blockPalByKey(bpKey).hex;
+      let hexes;
+      if(bpKey==='custom') hexes = (S.settings.customPal&&S.settings.customPal.length===6)?S.settings.customPal:blockPalByKey('brand').hex;
+      else if(bpKey.startsWith('saved:')){ const sp=(S.settings.savedPals||[]).find(p=>'saved:'+p.id===bpKey); hexes = (sp&&sp.hex)||blockPalByKey('brand').hex; }
+      else hexes = blockPalByKey(bpKey).hex;
       const c = {id:uid(), name:'New thing', icon:'star', pal:PALETTE[S.colors.length%6].key,
         customHex: bpKey==='pastel' ? null : hexes[S.colors.length%6], shape:'cube', goal:3, slotSize:1};
       S.colors.push(c);
@@ -1619,20 +1714,43 @@ const DayB = {
     return act.length ? new Set(act.map(i=>i.blockId)) : null;
   },
   unitsOf(colorId){ const c = S.colors.find(k=>k.id===colorId); return (c && c.slotSize) || 1; },
-  used(){ return this.items().reduce((a,i)=>a+this.unitsOf(i.colorId),0); },
+  dayOf(i){ return i.day||'today'; },
+  used(day='today'){ return this.items().filter(i=>this.dayOf(i)===day).reduce((a,i)=>a+this.unitsOf(i.colorId),0); },
+  doneUnits(){ return this.items().filter(i=>this.dayOf(i)==='today' && i.done).reduce((a,i)=>a+this.unitsOf(i.colorId),0); },
+  todayComplete(){ const t = this.items().filter(i=>this.dayOf(i)==='today'); return t.length>0 && t.every(i=>i.done); },
+  /* once today's plan is fully banked, new plans are forced onto tomorrow */
+  target(){ return this.todayComplete() ? 'tomorrow' : 'today'; },
   isPlanned(blockId){ return this.items().some(i=>i.blockId===blockId); },
   setPlanned(block, on){
     let items = this.items().filter(i=>i.blockId!==block.id);
-    if(on) items.push({id:uid(), blockId:block.id, colorId:block.colorId});
+    if(on) items.push({id:uid(), blockId:block.id, colorId:block.colorId, done:false, day:this.target()});
     S.day.items = items; S.day.date = dayKey(); save();
   },
   dropFromPlan(blockId){ S.day.items = this.items().filter(i=>i.blockId!==blockId); save(); },
+  /* banked blocks keep counting toward the day — mark done instead of vanishing */
+  markDone(blockId){
+    const it = this.items().find(i=>i.blockId===blockId);
+    if(!it) return false;
+    it.done = true; save();
+    if(this.todayComplete() && !S.day.celebrated){
+      S.day.celebrated = true; save();
+      setTimeout(()=>Floor.dayCelebrate(), 380);
+    }
+    return true;
+  },
   staleCheck(){
-    if(S.day.date && S.day.date!==dayKey() && this.items().length){ this.resetFlow(); return true; }
+    if(!S.day.date || S.day.date===dayKey()) return false;
+    // new day: banked items retire, tomorrow's pre-plan becomes today, celebration re-arms
+    S.day.items = this.items().filter(i=>!i.done);
+    const staleIds = new Set(this.items().filter(i=>this.dayOf(i)==='today').map(i=>i.id));
+    this.items().forEach(i=>{ if(this.dayOf(i)==='tomorrow') i.day='today'; });
+    S.day.celebrated = false; save();
+    if(staleIds.size){ this.resetFlow(staleIds); return true; }
+    S.day.date = dayKey(); save();
     return false;
   },
-  resetFlow(){
-    const pending = this.items().filter(i=>S.week.blocks.some(b=>b.id===i.blockId && b.status!=='dropped'));
+  resetFlow(onlyIds){
+    const pending = this.items().filter(i=>(!onlyIds || onlyIds.has(i.id)) && S.week.blocks.some(b=>b.id===i.blockId && b.status!=='dropped'));
     if(!pending.length){ S.day.items = []; S.day.date = dayKey(); save(); return; }
     const rows = pending.map(it=>{
       const c = S.colors.find(k=>k.id===it.colorId); const p = c?palFor(c):{fill:'#DDD',edge:'#AAA'};
@@ -1688,7 +1806,7 @@ const Notif = {
     if('Notification' in window && Notification.permission==='granted'){
       try{
         navigator.serviceWorker?.ready.then(reg=>{
-          reg.showNotification(V().notifTitle, {body:V().notifBody, icon:'icon-192.png', badge:'icon-192.png', tag:'roundup'});
+          reg.showNotification(V().notifTitle, {body:V().notifBody, icon:'icon-192.png', badge:'badge-96.png', tag:'roundup'});
         }).catch(()=>{ new Notification(V().notifTitle,{body:V().notifBody,icon:'icon-192.png'}); });
       }catch(e){}
     }
