@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachunk — Onboarding Email Campaign</title>
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="stylesheet" href="doc.css">
+<style>
+.email{background:var(--surface);border:1px solid var(--hairline);border-radius:20px;margin:18px 0;overflow:hidden}
+.email .meta{background:var(--inset);padding:14px 20px;display:flex;gap:18px;flex-wrap:wrap;font-size:13px}
+.email .meta b{color:var(--ink)}
+.email .body{padding:22px 24px;max-width:640px}
+.email .body p{margin:0 0 13px}
+.email .cta{display:inline-block;background:var(--mark);color:#FDFBF7;border-radius:999px;padding:11px 24px;font-weight:700;font-size:14.5px;margin:6px 0 4px}
+.email .ps{font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<header class="dochead">
+  <span class="logo">Kachunk<span class="dot">.</span> <span class="muted" style="font-weight:400;font-size:14px">/ onboarding emails</span></span>
+  <nav class="docnav">
+    <a href="index.html">Command Center</a><a href="brand.html">Brand</a><a href="positioning.html">Positioning</a><a href="launch.html">Launch</a><a href="store.html">Store</a><a href="purchase-list.html">Purchase List</a><a href="assets.html">Asset Pack</a><a class="on" href="emails.html">Emails</a>
+  </nav>
+</header>
+<div class="wrap">
+  <div class="kicker">Onboarding drip · 5 emails · Zesty voice · 2026-07-17</div>
+  <h1>The first ten days, by email.</h1>
+  <p class="lede">Triggered on signup (waitlist or install). One idea per email, one CTA per email, no guilt anywhere — the writing rules from the <a href="brand.html">brand bible</a> apply. Plain-text-looking, short, from "Raina at Kachunk."</p>
+
+  <div class="callout"><strong>Mechanics.</strong> Send via any ESP with sequences (LaunchList → export to Buttondown/MailerLite free tiers). Day 0 sends immediately; the rest are relative. Skip-logic worth adding later: if the user completed their first sweep before Day 6, swap E4 for the E5 content early. Every email footer: one-tap unsubscribe + "you're getting this because you signed up at kachunk.app."</div>
+
+  <h2>E1 · Day 0 — the welcome</h2>
+  <div class="email">
+    <div class="meta"><span><b>Send:</b> immediately</span><span><b>Subject:</b> Your blocks are waiting</span><span><b>Preview:</b> One bucket is enough to start.</span></div>
+    <div class="body">
+      <p>Hey — Raina here. I built Kachunk because every habit app I tried eventually made me feel bad, and I don't need an app for that.</p>
+      <p>Here's the whole system: your week is a pile of physical blocks. Each block is one time you said you'd do the thing. Do it, drag it into its bucket — <strong>kachunk.</strong> That's it. That's the app.</p>
+      <p>Start with <strong>one bucket</strong>. Seriously. Move ×3 or Water ×7. You can add more once the first one feels good.</p>
+      <a class="cta" href="#">Set up your first bucket</a>
+      <p class="ps">PS — you can throw the blocks around. It's allowed. It's encouraged.</p>
+    </div>
+  </div>
+
+  <h2>E2 · Day 1 — the no-streaks promise</h2>
+  <div class="email">
+    <div class="meta"><span><b>Send:</b> +1 day, morning</span><span><b>Subject:</b> There is no streak to break</span><span><b>Preview:</b> One bad Tuesday can't touch you here.</span></div>
+    <div class="body">
+      <p>Quick thing you should know about Kachunk, because it's the opposite of every tracker you've deleted:</p>
+      <p><strong>Nothing resets. Nothing turns red. There is no streak.</strong></p>
+      <p>Your goals are weekly, so a chaotic Tuesday just means the blocks wait for Wednesday. At the end of the week, Kachunk asks "did you do it?" — you tap what happened, and the week restacks. You're never behind; you're just mid-week.</p>
+      <a class="cta" href="#">See your board</a>
+      <p class="ps">PS — miss a whole week? It goes in Receipts as a quiet little row, not a crime scene.</p>
+    </div>
+  </div>
+
+  <h2>E3 · Day 3 — chips &amp; the today line</h2>
+  <div class="email">
+    <div class="meta"><span><b>Send:</b> +3 days</span><span><b>Subject:</b> The trick for habits that happen 8 times a day</span><span><b>Preview:</b> Drag it below the line and watch.</span></div>
+    <div class="body">
+      <p>Two power moves most people find by accident:</p>
+      <p><strong>1 · The today line.</strong> Drag blocks below the dotted line to plan today. Kachunk budgets your day in slots so you can't overpromise — it'll tell you when today is full.</p>
+      <p><strong>2 · Chips.</strong> Water ×8 isn't one moment, it's eight tiny ones. Turn on chips mode for a bucket, drop its block below the line, and it <em>shatters</em> into little chips. Bank them one at a time; hit your threshold and the whole block counts — confetti included.</p>
+      <a class="cta" href="#">Try shattering a block</a>
+    </div>
+  </div>
+
+  <h2>E4 · Day 6 — your first sweep</h2>
+  <div class="email">
+    <div class="meta"><span><b>Send:</b> +6 days, evening</span><span><b>Subject:</b> Tomorrow, your week asks one question</span><span><b>Preview:</b> "Did you do it?" — that's the whole ceremony.</span></div>
+    <div class="body">
+      <p>Your first week sweep is coming up. Here's how it works, so it isn't a surprise:</p>
+      <p>The board dims, and you tap every block that actually happened — it drops home. Anything you did but forgot to log? Tap it now, it still counts. Then hit <strong>Restack</strong> and a fresh week of blocks tumbles onto the board.</p>
+      <p>Whatever the number is, it's a real number about your real week. That's worth more than a perfect streak you had to lie to keep.</p>
+      <a class="cta" href="#">Open Kachunk</a>
+      <p class="ps">PS — after the sweep, check Receipts. Watching the weekly rows stack up is the quiet superpower of this whole app.</p>
+    </div>
+  </div>
+
+  <h2>E5 · Day 10 — the founder note</h2>
+  <div class="email">
+    <div class="meta"><span><b>Send:</b> +10 days</span><span><b>Subject:</b> Why this costs $5.99 exactly once</span><span><b>Preview:</b> Subscriptions are the ADHD tax. We don't collect it.</span></div>
+    <div class="body">
+      <p>Ten days in — thanks for being here this early. One honest note about the business, because you'll wonder eventually:</p>
+      <p>Kachunk costs <strong>$5.99, once</strong>, when it hits the app stores. No subscription, no premium blocks. Your data lives on your device, so there's no server bill to pass along. Pay once, own it — the way apps used to work.</p>
+      <p>Two small asks, take either or neither:</p>
+      <p>1 · Reply and tell me the one thing that confused you. I read every reply.<br>2 · Know someone whose calendar keeps beating them? Send them to kachunk.app.</p>
+      <a class="cta" href="#">Visit kachunk.app</a>
+      <p class="ps">PS — kachunk is a verb now. Use it accordingly.</p>
+    </div>
+  </div>
+
+  <div class="callout"><strong>HIGH RISK before sending:</strong> every claim above matches the shipped product today (weekly buckets, no streaks, chips, sweep, $5.99-once, local-first). If pricing or mechanics change before launch, this page must change with them — the drip and the store listing quote the same facts.</div>
+
+  <div class="footer"><span>Kachunk. — onboarding email campaign</span><span style="margin-left:auto">Voice: Zesty · rules in the <a href="brand.html">brand bible</a></span></div>
+</div>
+</body>
+</html>
