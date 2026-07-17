@@ -109,6 +109,48 @@ function applyBlockPalette(key, colors, customHexes){
     else c.customHex = bp.hex[i%6];
   });
 }
+/* chips config — target stepper + explicit "earned before full" toggle with a typed threshold */
+function chipConfigHTML(chips){
+  if(!chips) return '';
+  const early = chips.countsAt < chips.target;
+  return `<div class="chip-config">
+    <div><label>Chips per day</label><div class="stepper"><button data-f="t-">−</button><span class="val">${chips.target}</span><button data-f="t+">＋</button></div></div>
+    <div class="chips-toggle" style="margin-top:9px">
+      <label class="switch"><input type="checkbox" data-f="early" ${early?'checked':''}><span class="knob"></span></label>
+      <span>Block earned <strong>before</strong> all chips are in</span>
+    </div>
+    ${early?`<div style="display:flex;align-items:center;gap:10px;margin-top:9px">
+      <label style="font-size:12.5px;color:var(--muted)">Earned at</label>
+      <input type="number" data-f="countsAt" inputmode="numeric" min="1" max="${chips.target}" value="${chips.countsAt}"
+        style="width:72px;border:none;background:var(--surface);border-radius:10px;padding:9px 12px;font:inherit;font-size:15px;color:var(--ink);text-align:center">
+      <span style="font-size:12.5px;color:var(--muted)">of ${chips.target} chips</span>
+    </div>`:''}
+  </div>`;
+}
+function bindChipConfig(card, getChips, upd){
+  const chips = getChips(); if(!chips) return;
+  card.querySelector('[data-f="t-"]')?.addEventListener('click',()=>{
+    const wasFull = chips.countsAt >= chips.target;
+    chips.target = clamp(chips.target-1,2,30);
+    chips.countsAt = wasFull ? chips.target : Math.min(chips.countsAt, chips.target);
+    upd();
+  });
+  card.querySelector('[data-f="t+"]')?.addEventListener('click',()=>{
+    const wasFull = chips.countsAt >= chips.target;
+    chips.target = clamp(chips.target+1,2,30);
+    if(wasFull) chips.countsAt = chips.target;
+    upd();
+  });
+  card.querySelector('[data-f="early"]')?.addEventListener('change', e=>{
+    chips.countsAt = e.target.checked ? Math.max(1, chips.target-1) : chips.target;
+    upd(true);
+  });
+  const inp = card.querySelector('[data-f="countsAt"]');
+  inp?.addEventListener('change', e=>{
+    chips.countsAt = clamp(Math.round(+e.target.value||1), 1, chips.target);
+    upd();
+  });
+}
 function savedCardHTML(sp, on){
   return `<button class="pal-card ${on?'on':''}" data-bp="saved:${sp.id}">
     <span><span class="pc-name">${esc(sp.name)}</span><span class="pc-hint">saved by you</span></span>
@@ -196,7 +238,7 @@ const STARTERS = [
   {name:'Move',      icon:'dumbbell',   pal:'gentlemist',   goal:3, slots:2},
   {name:'Meal Prep', icon:'utensils',   pal:'dreamysand',  goal:2, slots:1},
   {name:'Social',    icon:'smile',      pal:'goldenglow',  goal:2, slots:3},
-  {name:'Water',     icon:'droplet',    pal:'cloudyhaze',   goal:7, slots:1, chips:{target:8, countsAt:5}},
+  {name:'Water',     icon:'droplet',    pal:'cloudyhaze',   goal:7, slots:1, chips:{target:8, countsAt:8}},
   {name:'Deep Work', icon:'brain',      pal:'softhoney',   goal:4, slots:2},
   {name:'Family',    icon:'heart',      pal:'peachwhisper',       goal:2, slots:1},
   {name:'Rest',      icon:'moon',       pal:'cloudyhaze', goal:3, slots:1},
@@ -579,25 +621,19 @@ const OB = {
             <label class="switch"><input type="checkbox" data-f="chips" ${c.chips?'checked':''}><span class="knob"></span></label>
             <span>Count in <strong>chips</strong> (several small reps = one block)</span>
           </div>
-          <div class="chip-config" ${c.chips?'':'hidden'}>
-            <div><label>Chips per day</label><div class="stepper"><button data-f="t-">−</button><span class="val">${c.chips?.target??8}</span><button data-f="t+">＋</button></div></div>
-            <div><label>Block earned at</label><div class="stepper"><button data-f="a-">−</button><span class="val">${c.chips?.countsAt??5}</span><button data-f="a+">＋</button></div></div>
-          </div>
+          ${chipConfigHTML(c.chips)}
         </div>`;
       const card = $('#obBody .bucket-card');
       card.querySelector('[data-f=look]').onclick = ()=>openColorPicker(c, ()=>this.render());
       card.querySelector('[data-f=bname]').oninput = e=>{ c.name = e.target.value; c.bucketName = e.target.value; };
       card.querySelector('[data-f=notes]').oninput = e=>c.notes = e.target.value;
-      card.querySelector('[data-f=chips]').onchange = e=>{ c.chips = e.target.checked?{target:8,countsAt:5}:null; this.render(); };
+      card.querySelector('[data-f=chips]').onchange = e=>{ c.chips = e.target.checked?{target:8,countsAt:8}:null; this.render(); };
       const upd = ()=>this.render();
       card.querySelector('[data-f="g-"]').onclick = ()=>{ c.goal = clamp(c.goal-1,1,14); upd(); };
       card.querySelector('[data-f="g+"]').onclick = ()=>{ c.goal = clamp(c.goal+1,1,14); upd(); };
       card.querySelector('[data-f="s-"]').onclick = ()=>{ c.slots = Math.max(1,(c.slots||1)-1); upd(); };
       card.querySelector('[data-f="s+"]').onclick = ()=>{ c.slots = Math.min(8,(c.slots||1)+1); upd(); };
-      card.querySelector('[data-f="t-"]')?.addEventListener('click',()=>{c.chips.target=clamp(c.chips.target-1,2,20); c.chips.countsAt=Math.min(c.chips.countsAt,c.chips.target); upd();});
-      card.querySelector('[data-f="t+"]')?.addEventListener('click',()=>{c.chips.target=clamp(c.chips.target+1,2,20); upd();});
-      card.querySelector('[data-f="a-"]')?.addEventListener('click',()=>{c.chips.countsAt=clamp(c.chips.countsAt-1,1,c.chips.target); upd();});
-      card.querySelector('[data-f="a+"]')?.addEventListener('click',()=>{c.chips.countsAt=clamp(c.chips.countsAt+1,1,c.chips.target); upd();});
+      bindChipConfig(card, ()=>c.chips, ()=>this.render());
     }
 
     if(key==='recap'){
@@ -926,7 +962,7 @@ const Floor = {
     Matter.World.add(this.engine.world, this.mc);
 
     Matter.Events.on(this.mc, 'startdrag', e=>{
-      const body = e.body; if(!body || !body.blockId) return;
+      const body = e.body; if(!body || !body.blockId || body.fadeT0) return;
       this.dragging = body; this.dragStart = {x:this.mouse.position.x, y:this.mouse.position.y, t:Date.now()};
       body.collisionFilter.mask = 0; // pass through floor while held
       buzz(6);
@@ -1071,6 +1107,13 @@ const Floor = {
     const loop = ()=>{
       if(!this.paused){
         Matter.Engine.update(this.engine, 1000/60);
+        // backstop: any chip queued to pop that somehow lingered despawns quietly
+        const now = performance.now();
+        for(const body of [...this.bodies.values()]){
+          if(body.fadeT0 && now - body.fadeT0 > 5000){
+            Matter.World.remove(this.engine.world, body); this.bodies.delete(body.blockId);
+          }
+        }
         // safety net: if a block ever tunnels across the divider, its plan state follows reality
         if(!this.sweepMode && !this.dragging){
           for(const body of this.bodies.values()){
@@ -1336,9 +1379,24 @@ const Floor = {
     sfx('impact'); buzz(18);
   },
   chipsOf(parentId){ return [...this.bodies.values()].filter(b=>b.isChip && b.chipParent===parentId); },
+  /* the block was earned — its leftover chips pop into confetti, one by one */
+  fadeChips(parentId){
+    this.chipsOf(parentId).forEach((ch,i)=>{
+      if(ch.fadeT0) return;
+      ch.fadeT0 = performance.now(); // undraggable while waiting for its pop
+      setTimeout(()=>{
+        if(!this.bodies.has(ch.blockId)) return;
+        const pal = palFor(S.colors.find(c=>c.id===ch.colorId)||{});
+        this.burst(ch.position.x, ch.position.y, pal);
+        Matter.World.remove(this.engine.world, ch); this.bodies.delete(ch.blockId);
+        sfx('tick');
+      }, 90 + i*110);
+    });
+  },
   gatherChips(parentId, at){
-    const chips = this.chipsOf(parentId);
     const block = S.week.blocks.find(b=>b.id===parentId);
+    if(!block || block.status==='dropped'){ this.fadeChips(parentId); return; }
+    const chips = this.chipsOf(parentId);
     const target = {x: clamp(at.x, 40, this.W-40), y: Math.min(at.y, this.planY()-70)};
     chips.forEach(ch=>{
       ch.collisionFilter.mask = 0; // ghost through the shelf on the way home
@@ -1351,15 +1409,13 @@ const Floor = {
     sfx('slide');
     setTimeout(()=>{
       this.chipsOf(parentId).forEach(ch=>{ Matter.World.remove(this.engine.world, ch); this.bodies.delete(ch.blockId); });
-      if(block && block.status!=='dropped'){
-        const nb = this.bodyFor(block);
-        if(nb){
-          Matter.Body.setPosition(nb, target); Matter.Body.setVelocity(nb, {x:0, y:-2.5});
-          this.bodies.set(block.id, nb); Matter.World.add(this.engine.world, nb);
-          Renderer3D.tumble(block.id, 1.3);
-        }
-        DayB.setPlanned(block, false);
+      const nb = this.bodyFor(block);
+      if(nb){
+        Matter.Body.setPosition(nb, target); Matter.Body.setVelocity(nb, {x:0, y:-2.5});
+        this.bodies.set(block.id, nb); Matter.World.add(this.engine.world, nb);
+        Renderer3D.tumble(block.id, 1.3);
       }
+      DayB.setPlanned(block, false);
       sfx('drop'); buzz(12);
       this.updateHeader();
     }, 400);
@@ -1388,6 +1444,7 @@ const Floor = {
         if(r) this.burst(r.x+r.w/2, r.y+18, pal, true);
         sfx('drop'); buzz(18);
       }
+      this.fadeChips(body.chipParent); // threshold beaten — the rest melt away
     } else if(r) this.burst(r.x+r.w/2, r.y+22, pal);
     this.syncBuckets(); this.updateHeader();
   },
@@ -1681,8 +1738,9 @@ const Settings = {
             <div class="stepper"><button data-f="ss-">−</button><span class="val">${c.slotSize||1}</span><button data-f="ss+">＋</button></div>
             <div class="chips-toggle">
               <label class="switch"><input type="checkbox" data-f="chips" ${bk.chips?'checked':''}><span class="knob"></span></label>
-              <span>Chips mode ${bk.chips?`· block at ${bk.chips.countsAt}/${bk.chips.target} per day`:''}</span>
+              <span>Chips mode (several small reps = one block)</span>
             </div>
+            ${chipConfigHTML(bk.chips)}
           </div>`;
         }).join('')}
       </div>
@@ -1761,7 +1819,8 @@ const Settings = {
       const bk = S.buckets.find(b=>b.id===card.dataset.b); if(!bk) return;
       card.querySelector('[data-f=bname]').onchange = e=>{ bk.name = e.target.value.trim()||bk.name; save(); Floor.syncBuckets(); };
       card.querySelector('[data-f=notes]').onchange = e=>{ bk.notes = e.target.value; save(); };
-      card.querySelector('[data-f=chips]').onchange = e=>{ bk.chips = e.target.checked?{target:8,countsAt:5}:null; save(); this.render(); };
+      card.querySelector('[data-f=chips]').onchange = e=>{ bk.chips = e.target.checked?{target:8,countsAt:8}:null; save(); this.render(); };
+      bindChipConfig(card, ()=>bk.chips, ()=>{ save(); this.render(); });
       const cc = S.colors.find(x=>x.id===bk.colorId);
       card.querySelector('[data-f="pal"]')?.addEventListener('click',()=>openColorPicker(cc, ()=>{ save(); this.render(); Floor.syncBuckets(); Floor.rebuild(); }));
       card.querySelector('[data-f="ss-"]')?.addEventListener('click',()=>{ cc.slotSize = Math.max(1,(cc.slotSize||1)-1); save(); this.render(); });

@@ -1,6 +1,6 @@
 # Kachunk.
 
-**The week you can hold.** Weekly habit tracking as physical 3D blocks you toss, stack, and drop into buckets — built for ADHD brains, visual thinkers, and anyone whose calendar keeps winning.
+**The week you can hold.** A habit tracker and habit builder where weekly habits are physical 3D blocks you toss, stack, and drop into buckets — built for ADHD brains, visual thinkers, and anyone whose calendar keeps winning.
 
 **Live app:** deployed via GitHub Pages from this repo · installable PWA · works offline · no account, no server — your blocks live in your browser.
 
