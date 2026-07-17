@@ -435,7 +435,7 @@ function load(){
 const V = () => VOICES[S.settings.voice] || VOICES.zesty;
 
 /* date helpers */
-const dayKey = (d=new Date()) => d.toISOString().slice(0,10);
+const dayKey = (d=new Date()) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; // local date, not UTC — "today" must not flip at 5pm
 function weekStartDate(from=new Date()){
   const d = new Date(from); const dow = (d.getDay()-S.settings.weekStartsOn+7)%7;
   d.setHours(0,0,0,0); d.setDate(d.getDate()-dow); return d;
@@ -1391,7 +1391,7 @@ const Floor = {
   planY(){ return this.floorY() - 236; },  // the darker Today shelf sits just above the buckets
   applyMode(){
     this.layout(); this.syncBuckets(); this.updateHeader();
-    if(S.day.date!==dayKey()){ S.day.date = dayKey(); save(); }
+    DayB.staleCheck();
     for(const [id, body] of this.bodies){
       body.collisionFilter.mask = -1;
       if(DayB.isPlanned(id)){
@@ -1484,7 +1484,7 @@ const Floor = {
           <g transform="translate(38 48) scale(1.05)" fill="none" stroke="${iconInkFor(c, p.fill)}" stroke-opacity="0.6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${ICONS[c.icon]||ICONS.star}</g>
         </svg>
         <div style="font-size:12px;font-weight:700;color:var(--ink);line-height:1.15;padding:0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(bk.name)}</div>
-        <div class="mono" style="font-size:11px;color:var(--muted)">${done}/${c.goal}${(n=>n?` <span style="color:var(--good);font-weight:700">+${n}</span>`:'')(S.week.blocks.filter(b=>b.colorId===c.id && b.status==='dropped' && b.ts && b.ts.slice(0,10)===dayKey()).length * ((c.slotSize||1)))}</div>
+        <div class="mono" style="font-size:11px;color:var(--muted)">${done}/${c.goal}${(n=>n?` <span style="color:var(--good);font-weight:700">+${n}</span>`:'')(S.week.blocks.filter(b=>b.colorId===c.id && b.status==='dropped' && b.ts && dayKey(new Date(b.ts))===dayKey()).length * ((c.slotSize||1)))}</div>
       </button>`;
     }).join('');
     this.bucketRects = $$('#bucketRow .bucket-hit').map(el=>{
@@ -1809,7 +1809,6 @@ const Floor = {
       const due = this.mode==='week' && S.colors.length>0 && days>=6 && S.settings.sweepDismissed!==dayKey();
       fab.hidden = !due;
     }
-    Notif.updateDot();
   },
   pause(){ this.paused = true; },
   resume(){ this.paused = false; },
@@ -2016,7 +2015,7 @@ const Settings = {
       const pool = [...(v.drop||[]), ...(v.toss||[]).filter(Boolean), v.chipDone, v.allDone, v.perfect, v.restacked].filter(Boolean);
       toast(pool[Math.floor(Math.random()*pool.length)] || v.sample, {ms:2600});
     });
-    $('#setTime').onchange = e=>{ S.settings.roundupTime = e.target.value||'20:30'; save(); Notif.updateDot(); };
+    $('#setTime').onchange = e=>{ S.settings.roundupTime = e.target.value||'20:30'; save(); };
     $('#setSound').onchange = e=>{ S.settings.sound = e.target.checked; save(); if(e.target.checked) sfx('tick'); };
     $('#setTheme').onchange = e=>{ S.settings.theme = e.target.checked?'dark':'light'; save(); applyTheme(); };
     $$('#settingsBody .pal-card').forEach(el=>el.onclick=()=>{
@@ -2143,8 +2142,9 @@ const DayB = {
     return false;
   },
   resetFlow(onlyIds){
+    S.day.date = dayKey(); save(); // stamp first so repeated repaints can't re-run the migration
     const pending = this.items().filter(i=>(!onlyIds || onlyIds.has(i.id)) && S.week.blocks.some(b=>b.id===i.blockId && b.status!=='dropped'));
-    if(!pending.length){ S.day.items = []; S.day.date = dayKey(); save(); return; }
+    if(!pending.length){ S.day.items = []; save(); return; }
     const rows = pending.map(it=>{
       const c = S.colors.find(k=>k.id===it.colorId); const p = c?palFor(c):{fill:'#DDD',edge:'#AAA'};
       return `<div class="ru-blockline" data-id="${it.id}" style="justify-content:space-between">
@@ -2180,7 +2180,7 @@ const DayB = {
 /* ═════════ NOTIFICATIONS ═════════ */
 const Notif = {
   timer:null,
-  init(){ this.updateDot(); setInterval(()=>this.check(), 30000); this.check(); },
+  init(){ setInterval(()=>this.check(), 30000); this.check(); },
   due(){
     if(!S.onboarded) return false;
     const [h,m] = (S.settings.roundupTime||'20:30').split(':').map(Number);
@@ -2191,7 +2191,6 @@ const Notif = {
     return now>=target && !doneToday && trayBlocks().length>0;
   },
   check(){
-    this.updateDot();
     if(!this.due()) return;
     const key = 'kachunk.notified.'+dayKey();
     if(sessionStorage.getItem(key)) return;
@@ -2203,8 +2202,7 @@ const Notif = {
         }).catch(()=>{ new Notification(V().notifTitle,{body:V().notifBody,icon:'icon-192.png'}); });
       }catch(e){}
     }
-  },
-  updateDot(){ const d = $('#roundupDot'); if(d) d.hidden = !this.due(); }
+  }
 };
 
 /* ═════════ BOOT ═════════ */
@@ -2248,7 +2246,13 @@ function boot(){
   $('#settingsBack').innerHTML = ic('back');
   $('#obBack').innerHTML = ic('back');
 
-  if(S.onboarded){ show('#screen-floor'); Floor.rebuild(); }
+  if(S.onboarded){ show('#screen-floor'); Floor.rebuild(); if(!DayB.staleCheck()) Floor.applyMode(); }
+  // roll the day over when the app is brought back to the foreground (left open overnight)
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState==='visible' && S.onboarded && S.day.date!==dayKey()){
+      if(!DayB.staleCheck()) Floor.applyMode();
+    }
+  });
   if(!DEMO) Notif.init();
   if(!DEMO && 'serviceWorker' in navigator){ try{ navigator.serviceWorker.register('sw.js'); }catch(e){} }
 }
