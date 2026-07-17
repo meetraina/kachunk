@@ -16,7 +16,7 @@ const FONTS = `
 @font-face{font-family:"Figtree";font-weight:300;src:url("../fonts/figtree-latin-300-normal.woff2") format("woff2");}
 @font-face{font-family:"Figtree";font-weight:600;src:url("../fonts/figtree-latin-600-normal.woff2") format("woff2");}
 *{box-sizing:border-box;margin:0}
-:root{--paper:#F8F6F2;--ink:#33414D;--muted:#8B949B;--terra:#DD7C54;--aqua:#7E9B95;--hairline:#E6E1D6;
+:root{--paper:#F8F6F2;--ink:#33414D;--muted:#8B949B;--terra:#DD7C54;--aqua:#8FB0BC;--hairline:#E6E1D6;
 --mist:#C9D7DA;--peachw:#F4C7BA;--glow:#FDDAA1;--haze:#FDF9EF;--sand:#EDE5B9;--honey:#DFC289;}
 body{font-family:"Inclusive Sans",sans-serif;background:var(--paper);color:var(--ink);overflow:hidden}
 .brico{font-family:"Bricolage Grotesque",sans-serif;letter-spacing:-0.015em}

@@ -6,7 +6,7 @@ const { chromium } = require('playwright');
   const html = (size, radius, pad) => `<!doctype html><html><head><style>
     @font-face{font-family:"Bricolage";font-weight:800;src:url("/node_modules/@fontsource/bricolage-grotesque/files/bricolage-grotesque-latin-800-normal.woff2") format("woff2")}
     body{margin:0;width:${size}px;height:${size}px;background:#F8F6F2;border-radius:${radius}px;overflow:hidden;display:flex;align-items:center;justify-content:center}
-    .blk{width:${size*0.52}px;height:${size*0.52}px;border-radius:${size*0.115}px;background:#7E9B95;transform:rotate(-8deg);
+    .blk{width:${size*0.52}px;height:${size*0.52}px;border-radius:${size*0.115}px;background:#8FB0BC;transform:rotate(-8deg);
       box-shadow:0 ${size*0.05}px ${size*0.075}px -${size*0.03}px rgba(51,65,77,.5), inset 0 -${size*0.012}px 0 rgba(0,0,0,.10), inset 0 ${size*0.006}px 0 rgba(255,255,255,.22);
       display:flex;align-items:center;justify-content:center;font-family:"Bricolage";font-weight:800;font-size:${size*0.30}px;color:#FDFBF7;line-height:1}
     .blk span{color:#DD7C54}
