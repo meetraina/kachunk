@@ -9,7 +9,7 @@
 - Each **bucket** is a weekly intention (Move ×3, Read ×5…). Each **block** is one time you said you'd do it.
 - Do the thing → drag the block into its bucket → *kachunk* (confetti included).
 - Plan your day by dragging blocks below the shelf — a slot budget keeps you honest.
-- The week **never auto-resets**. The end-of-week sweep asks *"did you do it?"* — you tap what happened, then restack.
+- The week **never auto-resets**. At week's end, **Restack** asks *"did you do it?"* — you tap what happened, and a fresh stack is built from your goals.
 - **Receipts, not streaks.** Averages built from your actual blocks. There is no red in this app.
 
 ## Tech
@@ -46,7 +46,7 @@ assets/                                    build tooling: E2E tests (Playwright)
 
 ```bash
 node assets/test-v6.js        # headless E2E: onboarding → board → toss → capture →
-                              # day planning → sweep → restack → receipts → settings
+                              # day planning → claim → restack → receipts → settings
 node assets/shoot-final.js    # regenerate the f1–f11 screen suite
 node assets/compose-pack.js   # regenerate the full store/launch asset pack
 ```

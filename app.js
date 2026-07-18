@@ -32,6 +32,7 @@ const ICONS = {
   cal:    '<rect x="4" y="5.5" width="16" height="15" rx="3"/><path d="M4 10.5h16M8.5 3.5v4M15.5 3.5v4"/>',
   clock:  '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
   grid:   '<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>',
+  chunk:  '<rect x="3.5" y="8.5" width="12" height="12" rx="3"/><rect x="14.8" y="2.6" width="6" height="6" rx="1.8" transform="rotate(16 17.8 5.6)"/>',
   gear:   '<circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v3M12 18.2v3M2.8 12h3M18.2 12h3M5.5 5.5l2.1 2.1M16.4 16.4l2.1 2.1M18.5 5.5l-2.1 2.1M7.6 16.4l-2.1 2.1"/>',
   sliders:'<path d="M4 7.5h9M17.5 7.5H20M4 16.5h3M11.5 16.5H20"/><circle cx="15.25" cy="7.5" r="2.25"/><circle cx="9.25" cy="16.5" r="2.25"/>',
   moon:   '<path d="M20 14.5A8.5 8.5 0 019.5 4a8.5 8.5 0 1010.5 10.5z"/>',
@@ -52,7 +53,7 @@ const ic = (name, cls='') => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidde
 const PALETTE = [
   {key:'gentlemist',   name:'Gentle Mist',   fill:'#C9D7DA', edge:'#8FA6AA', light:'#E0EAEC'},
   {key:'peachwhisper', name:'Peach Whisper', fill:'#F4C7BA', edge:'#C08D7E', light:'#F9DED6'},
-  {key:'goldenglow',   name:'Golden Glow',   fill:'#FDDAA1', edge:'#C89F58', light:'#FEE9C6'},
+  {key:'goldenglow',   name:'Dusty Lavender', fill:'#BDB6C6', edge:'#88838E', light:'#DCD8E2'},
   {key:'cloudyhaze',   name:'Cloudy Haze',   fill:'#FDF9EF', edge:'#C4B694', light:'#FFFDF8'},
   {key:'dreamysand',   name:'Dreamy Sand',   fill:'#EDE5B9', edge:'#B4A870', light:'#F4EFD3'},
   {key:'softhoney',    name:'Soft Honey',    fill:'#DFC289', edge:'#A78A4E', light:'#EBD7AF'},
@@ -76,11 +77,11 @@ function palFor(c){
 
 /* ── block color palettes — pick one, blocks re-base by slot order ── */
 const BLOCK_PALETTES = [
-  {key:'brand',  name:'Kachunk.',       hint:'default brights',                    hex:['#7C93A5','#DD7C54','#DFC289','#7E9B95','#C98D7E','#85A88E']},
+  {key:'brand',  name:'Kachunk.',       hint:'default brights',                    hex:['#7C93A5','#DD7C54','#DFC289','#FDFBF7','#C98D7E','#85A88E']},
   {key:'pastel', name:'Almost Neutral', hint:'soft and barely there',              hex:PALETTE.map(p=>p.fill)},
-  {key:'zen',    name:'Spa Day',        hint:'low-stim and relaxing',              hex:['#B3C5C7','#A8BBA8','#E3D7C3','#CFC8BC','#D8C0B4','#8FA08A']},
+  {key:'zen',    name:'Zen',            hint:'low-stim and relaxing',              hex:['#B3C5C7','#A8BBA8','#E3D7C3','#FDFBF7','#D8C0B4','#D98F7E']},
   {key:'bright', name:'Toy Box',        hint:'classic bright pop',                 hex:['#4E8AC8','#E2574C','#F2A93B','#3FA06E','#8A64C8','#E56FA1']},
-  {key:'gem',    name:'Moody',          hint:'rich, deep gemtones',                hex:['#35558A','#2F7D5D','#6E4F8E','#9E3B4D','#C98A2E','#2E7D83']},
+  {key:'gem',    name:'Moody',          hint:'rich, deep gemtones',                hex:['#2D4774','#27694E','#5C4277','#853241','#33414D','#27696E']},
   {key:'mono',   name:'Mono',           hint:'let the icons speak for themselves', hex:['#E7E2D6','#E7E2D6','#E7E2D6','#E7E2D6','#E7E2D6','#E7E2D6']},
 ];
 const blockPalByKey = k => BLOCK_PALETTES.find(p=>p.key===k) || BLOCK_PALETTES[0];
@@ -117,24 +118,24 @@ function applyBlockPalette(key, colors, customHexes){
    Model: {unit, total (the day's full amount), chunk (one small chunk),
    block (minimum amount — the day's block counts here even short of total)}.
    Example (water): total 68 oz · small chunk 8 oz · minimum 48 oz · 7 days. */
-function chunkVizHTML(cfg){
+function chunkVizHTML(cfg, pal){
   if(!cfg) return '';
   const u = cfg.unit ? esc(cfg.unit) : 'times';
   const shown = Math.min(cfg.perDay, 16), over = cfg.perDay - shown;
   const cells = Array.from({length:shown},(_,k)=>`<i class="${k<cfg.perBlock?'fill':''}"></i>`).join('');
   const bpd = Math.floor(cfg.perDay/cfg.perBlock);
-  return `<div class="cc-viz">
+  return `<div class="cc-viz"${pal?` style="--bkc:${pal.fill};--bkl:${pal.light}"`:''}>
     <div class="cc-cells">${cells}${over>0?`<em>+${over}</em>`:''}</div>
     <div class="cc-cap">Each small chunk is ${cfg.chunk} ${u}. Your block counts at ${cfg.block}${cfg.block<cfg.total?` — ${cfg.total} is the full day`:''}.${bpd>1?` Up to ${bpd} blocks a day.`:''}</div>
   </div>`;
 }
-function chipConfigHTML(chips, goal, name){
+function chipConfigHTML(chips, goal, name, pal){
   if(!chips) return '';
   const cfg = chunkCfg(chips);
   const inp = 'border:none;background:var(--surface);border-radius:10px;padding:9px 12px;font:inherit;font-size:15px;color:var(--ink);width:100%;text-align:center';
   const gsel = goal!==undefined ? Math.min(Math.max(Math.round(goal)||7,1),7) : 7;
   return `<div class="chip-config">
-    <div class="be-lab" style="margin-top:14px">How much do you want to track per day?</div>
+    <div class="be-lab" style="margin-top:14px">What is your daily goal?</div>
     <div class="cc-main">
       <input type="number" data-f="total" inputmode="numeric" min="1" value="${cfg.total}" aria-label="Daily total" style="${inp};flex:1;min-width:0">
       <input type="text" data-f="unit" value="${esc(chips.unit||'')}" placeholder="oz, cal…" maxlength="18"
@@ -145,7 +146,7 @@ function chipConfigHTML(chips, goal, name){
       <div><label>Small chunk</label><input type="number" data-f="chunk" inputmode="numeric" min="1" value="${cfg.chunk}" style="${inp}"></div>
       <div><label>Minimum</label><input type="number" data-f="block" inputmode="numeric" min="1" value="${cfg.block}" style="${inp}"></div>
     </div>
-    ${chunkVizHTML(cfg)}
+    ${chunkVizHTML(cfg, pal)}
   </div>`;
 }
 function bindChipConfig(card, getChips, upd, goalIO){
@@ -209,7 +210,7 @@ function openCustomPicker(getSel, setSel, onComplete, onClose, onSaved){
   const paint = ()=>{
     const sel = getSel();
     const slots = Array.from({length:6},(_,i)=> sel[i]
-      ? `<i data-ord="${sel[i]}" style="background:${sel[i]};box-shadow:inset 0 -3px 0 ${shade(sel[i],-0.22)}"><b class="drag-h" style="color:${inkFor(sel[i])==='#33414D'?'rgba(51,65,77,.55)':'rgba(253,251,247,.7)'}">⠿</b></i>`
+      ? `<i data-ord="${sel[i]}" style="background:${sel[i]};box-shadow:inset 0 -3px 0 ${shade(sel[i],-0.22)}"><b class="drag-h" style="color:${textInkFor(sel[i])};opacity:.8">⠿</b></i>`
       : '<i class="empty"></i>').join('');
     $('#cbpPreview').innerHTML = slots;
     $('#cbpHint').textContent = `${sel.length}/6 picked` + (sel.length===6 ? ' — applied to your buckets' : '');
@@ -228,7 +229,7 @@ function openCustomPicker(getSel, setSel, onComplete, onClose, onSaved){
   };
   Sheet.open(`
     <h3 style="margin-bottom:2px">Build your palette</h3>
-    <p class="muted" style="font-size:13.5px;margin:0 0 12px">Tap any six — the whole spectrum, paper to ink. Tap a pick again to drop it.</p>
+    <p class="muted" style="font-size:14px;margin:0 0 12px">Tap any six — the whole spectrum, paper to ink. Tap a pick again to drop it.</p>
     <div class="pal-dots cb-preview" id="cbpPreview"></div>
     <div class="cb-grid" id="cbpGrid">
       ${PICKER_COLORS.map(h=>`<button class="cb-sw" data-h="${h}" style="background:${h}" aria-label="${h}"></button>`).join('')}
@@ -237,7 +238,7 @@ function openCustomPicker(getSel, setSel, onComplete, onClose, onSaved){
     </div>
     <div style="display:flex;align-items:center;gap:12px;justify-content:center">
       <div class="cb-hint" id="cbpHint" style="margin-top:10px"></div>
-      <button id="cbpClear" type="button" style="appearance:none;border:none;background:transparent;color:var(--mark);font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;padding:10px 2px 0">clear it</button>
+      <button id="cbpClear" type="button" style="appearance:none;border:none;background:transparent;color:var(--mark);font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;padding:10px 2px 0">clear it</button>
     </div>
     <div style="display:flex;gap:8px;margin-top:12px">
       <input type="text" id="cbpName" placeholder="Name it to save it…" maxlength="22"
@@ -409,7 +410,7 @@ const VOICES = {
     restackBody:(d,g)=>`${d} of ${g} blocks placed. Reset the board for next week?`,
     restackBtn:'Reset the board',
     restacked:'New week ready.',
-    notifTitle:'Kachunk', notifBody:'Roundup time. Review your blocks.',
+    notifTitle:'Kachunk', notifBody:'Restack time. Review your blocks.',
     allDone:'All blocks placed.',
     empty:'No blocks configured. Open Settings.',
     perfect:'Goal met: all blocks placed.',
@@ -427,7 +428,7 @@ const VOICES = {
     entry:(n)=>n>1?`${n} blocks, kachunked in bulk. Efficient.`:`One block, kachunked. Efficient.`,
     chipDone:'That counts as a whole block. In it goes. KACHUNK.',
     chipTick:'Small chunk in. Keep ’em coming.',
-    ruIntro:(n)=>`Roundup time. ${n} block${n>1?'s are':' is'} still wandering the floor. Let’s ask them some questions.`,
+    ruIntro:(n)=>`Restack time. ${n} block${n>1?'s are':' is'} still wandering the floor. Let’s ask them some questions.`,
     ruDid:(c)=>`Be honest — did ${c} happen?`,
     ruYes:'It happened ✓', ruNo:'Not this week',
     ruHowMany:'How many times, champ?',
@@ -437,12 +438,12 @@ const VOICES = {
     restackBody:(d,g)=>`${d} of ${g} blocks bucketed. Zero shame either way — fresh blocks await.`,
     restackBtn:'Restack my week',
     restacked:'Fresh stack. New week. Same you, but with data.',
-    notifTitle:'Kachunk 🧱', notifBody:'Roundup o’clock. Your blocks are loitering. Come deal with them.',
+    notifTitle:'Kachunk 🧱', notifBody:'Restack o’clock. Your blocks are loitering. Come deal with them.',
     allDone:'Every block bucketed. Absolute legend behavior.',
     empty:'No blocks yet. Hit Settings and give yourself something to drop.',
     perfect:'Full bucket. FULL. BUCKET.',
     goodnight:'Day banked. Goodnight.',
-    nightIntro:'Goodnight roundup — tap every block that actually happened today. Then bed.',
+    nightIntro:'Goodnight — tap every block that actually happened today. Then bed.',
     newDay:'New day, fresh floor. Yesterday’s blocks want a word before they move on.',
   },
   spicy: {
@@ -455,7 +456,7 @@ const VOICES = {
     entry:(n)=>n>1?`${n} at once? Suspicious. Recorded anyway.`:`One. Recorded. Baby steps.`,
     chipDone:'Fine, that’s a real block. Credit where due.',
     chipTick:'A small chunk. Riveting. Keep going.',
-    ruIntro:(n)=>`Roundup. ${n} block${n>1?'s':''} just sitting there. Explain yourself.`,
+    ruIntro:(n)=>`Restack. ${n} block${n>1?'s':''} just sitting there. Explain yourself.`,
     ruDid:(c)=>`${c}. Did it happen or are we lying to a habit app now?`,
     ruYes:'It happened, relax', ruNo:'No. Moving on.',
     ruHowMany:'Numbers. Now.',
@@ -465,7 +466,7 @@ const VOICES = {
     restackBody:(d,g)=>`${d} of ${g}. The blocks have seen things. Restack and try again.`,
     restackBtn:'Restack. Again.',
     restacked:'Clean slate. Don’t waste it.',
-    notifTitle:'Kachunk 🌶️', notifBody:'Your blocks called. They’re bored. Roundup. Now.',
+    notifTitle:'Kachunk 🌶️', notifBody:'Your blocks called. They’re bored. Restack. Now.',
     allDone:'All bucketed?? Who ARE you.',
     empty:'Zero blocks. Bold strategy. Settings is that way.',
     perfect:'Perfect week. I have literally nothing to roast. Unsettling.',
@@ -483,7 +484,7 @@ const VOICES = {
     entry:(n)=>n>1?`${n} WHOLE BLOCKS?! Superstar!!`:`A WHOLE BLOCK!! Superstar!!`,
     chipDone:'DING DING! That’s a full block, superstar!!',
     chipTick:'Small chunk!! Every little bit counts!!',
-    ruIntro:(n)=>`Roundup party!! ${n} little block${n>1?'s':''} to check in on. You’re doing amazing!`,
+    ruIntro:(n)=>`Restack party!! ${n} little block${n>1?'s':''} to check in on. You’re doing amazing!`,
     ruDid:(c)=>`Did wonderful ${c} happen this week?!`,
     ruYes:'YES it did!!', ruNo:'Not this time (still love you)',
     ruHowMany:'How many?! Tell me tell me!',
@@ -493,12 +494,12 @@ const VOICES = {
     restackBody:(d,g)=>`${d} of ${g} blocks!! Every single one is a win! Ready for a fresh stack?!`,
     restackBtn:'FRESH STACK!!',
     restacked:'New week, new blocks, same legend!! ✨',
-    notifTitle:'Kachunk 💜', notifBody:'It’s Roundup time!! Your blocks miss you!!',
+    notifTitle:'Kachunk 💜', notifBody:'It’s Restack time!! Your blocks miss you!!',
     allDone:'EVERY BLOCK IS HOME!! I’m crying!!',
     empty:'No blocks yet — let’s make some magic in Settings!!',
     perfect:'PERFECT WEEK!! Confetti forever!!',
     goodnight:'Goodnight, superstar!! 🌙',
-    nightIntro:'Goodnight roundup!! Tap every block you did today — then sweet dreams!!',
+    nightIntro:'Goodnight!! Tap every block you did today — then sweet dreams!!',
     newDay:'A brand new day!! Let’s tuck yesterday in and start fresh!!',
   },
 };
@@ -515,10 +516,10 @@ function demoState(){
   const mk = (name, icon, hex, goal, slotSize) => ({id:uid(), name, icon, pal:'gentlemist', customHex:hex, shape:'cube', goal, slotSize});
   const cols = [
     mk('Move','dumbbell','#7C93A5',3,2), mk('Read','read','#DD7C54',5,1),
-    mk('Water','droplet','#DFC289',7,1), mk('Rest','moon','#7E9B95',3,1), mk('Create','palette','#C98D7E',4,1),
+    mk('Water','droplet','#DFC289',7,0.5), mk('Rest','moon','#7E9B95',3,1), mk('Create','palette','#C98D7E',4,1),
   ];
   s.colors = cols;
-  s.buckets = cols.map(c=>({id:uid(), colorId:c.id, name:c.name, notes:'', chips: c.name==='Water'?{unit:'glasses', total:8, chunk:1, block:8}:null}));
+  s.buckets = cols.map(c=>({id:uid(), colorId:c.id, name:c.name, notes:'', chips: c.name==='Water'?{unit:'oz', total:68, chunk:8, block:48}:null}));
   s.settings.userName = 'Sam'; s.settings.blockPal = 'brand'; s.onboarded = true;
   // this week, mid-flight: start 3 days ago, ~half the blocks banked with spread timestamps
   s.week = {start:new Date(now-3*day).toISOString(), blocks:[], chips:{}};
@@ -706,6 +707,18 @@ function sfx(kind, opt={}){
         g.gain.setValueAtTime(0.16, t+i*0.11); g.gain.exponentialRampToValueAtTime(0.001, t+i*0.11+0.22);
         o.connect(g); o.start(t+i*0.11); o.stop(t+i*0.11+0.24);
       });
+    } else if(kind==='riff'){
+      // success riff — quick ascending video-game arpeggio, warm not shrill
+      [523.25,659.25,783.99,1046.5].forEach((f,i)=>{
+        const g = out(); const o = ctx.createOscillator(); o.type='triangle';
+        o.frequency.setValueAtTime(f, t+i*0.07);
+        g.gain.setValueAtTime(0.14, t+i*0.07); g.gain.exponentialRampToValueAtTime(0.001, t+i*0.07+0.3);
+        o.connect(g); o.start(t+i*0.07); o.stop(t+i*0.07+0.32);
+      });
+      const s2 = out(); const o2 = ctx.createOscillator(); o2.type='sine'; // sparkle octave on the landing note
+      o2.frequency.setValueAtTime(2093, t+0.21);
+      s2.gain.setValueAtTime(0.05, t+0.21); s2.gain.exponentialRampToValueAtTime(0.001, t+0.62);
+      o2.connect(s2); o2.start(t+0.21); o2.stop(t+0.65);
     }
   }catch(e){}
 }
@@ -826,16 +839,17 @@ const OB = {
   start(){
     this.step = 0;
     this.draft = { name:'', colors: [], palKey:'brand', roundupTime:'20:30', voice:'zesty', maxSlots:8 };
-    this.pickEdit = null; this.newDraft = null; this.pickAll = false;
+    this.pickEdit = null; this.newDraft = null; this._riffPlayed = false;
     show('#screen-onboard'); this.render();
   },
   steps(){ return ['name','pick','palette', ...this.draft.colors.map((c,i)=>'bucket:'+i), 'recap','voice','go']; },
   weeklyGoalSlots(){ return this.draft.colors.reduce((a,c)=>a+(c.goal*(c.slots||1)),0); },
 
-  paint(bg, inkOverride){
+  paint(bg, inkOverride, textOverride){
     const sec = $('#screen-onboard');
     sec.style.background = bg || '';
     sec.style.setProperty('--obInk', inkOverride || 'var(--ink)');
+    sec.style.setProperty('--obText', textOverride || inkOverride || 'var(--text)');
     sec.classList.toggle('colored', !!bg);
   },
 
@@ -851,7 +865,7 @@ const OB = {
         <h2 class="ob-title">First — what should we call you?</h2>
         <p class="ob-sub">Just a name. It stays on this device, like everything else here.</p>
         <input type="text" id="obName" value="${esc(d.name)}" placeholder="Your name" autocomplete="given-name"
-          style="width:100%;border:2px solid var(--hairline);border-radius:14px;padding:15px 16px;font:inherit;font-size:17px;background:var(--surface);color:var(--ink);outline:none">`;
+          style="width:100%;border:2px solid rgba(51,65,77,.14);border-radius:14px;padding:15px 16px;font:inherit;font-size:17px;background:#FDFBF7;color:#33414D;caret-color:#33414D;outline:none">`;
       const inp = $('#obName');
       inp.oninput = e=>d.name = e.target.value;
       inp.onkeydown = e=>{ if(e.key==='Enter') this.next(); };
@@ -874,7 +888,7 @@ const OB = {
       const newCard = nd ? (()=>{ const p = palFor(nd); return `<div class="pk-expand"><div class="bucket-card be-card be-new">
           <div class="bc-head">
             <button class="swatch" data-f="look" style="width:46px;height:46px;background:${p.fill};border-color:${p.edge};--swk:${iconInkFor(nd,p.fill)}" title="Change look">${ic(nd.icon)}</button>
-            <input type="text" data-f="bname" placeholder="Name your bucket" aria-label="Bucket name" style="font-weight:700;font-size:17px">
+            <input type="text" data-f="bname" placeholder="Name your bucket" aria-label="Bucket name" style="font-weight:700;font-size:18px">
           </div>
           <div class="set-note" style="padding:6px 2px 0">Icon + name together give the best starting guess — you'll set it up in a moment.</div>
           <div class="sheet-actions" style="margin-top:12px">
@@ -882,22 +896,13 @@ const OB = {
             <button class="btn btn-primary" data-f="create" style="flex:1">Add it</button>
           </div></div></div>`; })()
         : `<button type="button" class="pk-card" data-custom="1"><span class="pk-name">＋ Your own</span></button>`;
-      let gridInner;
-      if(this.pickAll){
-        const cats = [...new Set(STARTERS.map(s=>s.cat))];
-        gridInner = cats.map(cat=>`<div class="pk-cat">${cat}</div>`
-          + STARTERS.filter(s=>s.cat===cat).map(cardFor).join('')).join('');
-      } else {
-        gridInner = STARTERS.filter(s=>s.top || d.colors.some(c=>c.starter===s.name)).map(cardFor).join('');
-      }
-      const moreCard = `<button type="button" class="pk-card pk-more" data-more="1">${ic(this.pickAll?'back':'sparkle')}<span class="pk-name">${this.pickAll?'Show fewer':`See all ${STARTERS.length}`}</span></button>`;
+      // onboarding shows just the classic set + your-own — the full catalog stays in Settings
+      const gridInner = STARTERS.filter(s=>s.top || d.colors.some(c=>c.starter===s.name)).map(cardFor).join('');
       b.innerHTML = `
         <h2 class="ob-title">Pick your buckets${d.name?', '+esc(d.name.trim().split(' ')[0]):''}</h2>
         <p class="ob-sub">A bucket is a loose plan, not a commitment. Choose your blocks now, then claim the blocks you complete as you go. That's it.</p>
-        <div class="pk-grid">${gridInner}${customs}${moreCard}${newCard}</div>
-        <div style="color:rgba(51,65,77,.72);font-size:13.5px">${d.colors.length ? d.colors.length+' of 6 picked — you’ll set each one up in a moment.' : 'Pick a few — six max, keeps the board easy to hold.'}</div>`;
-      const more = $('#obBody .pk-card[data-more]');
-      if(more) more.onclick = ()=>{ this.pickAll = !this.pickAll; this.render(); };
+        <div class="pk-grid">${gridInner}${customs}${newCard}</div>
+        <div style="color:#33414D;font-size:14px">${d.colors.length ? d.colors.length+' of 6 picked — you’ll set each one up in a moment.' : 'Pick a few — six max, keeps the board easy to hold.'}</div>`;
       $$('#obBody .pk-card[data-starter]').forEach(el=>el.onclick=()=>{
         if(d.colors.length>=6) return toast('Six buckets max — keep it holdable.');
         const st = STARTERS.find(x=>x.name===el.dataset.starter);
@@ -938,9 +943,10 @@ const OB = {
       const c = d.colors[i];
       if(!c){ this.step = this.steps().indexOf('recap'); this.render(); return; }
       const p = palFor(c);
-      this.paint(p.fill, inkFor(p.fill));
+      const tk0 = pageInkFor(p.fill); // one ink per page — all paper or all near-ink, never a mix
+      this.paint(p.fill, tk0, tk0);
       b.innerHTML = `
-        <div class="ob-count" style="color:var(--obInk);opacity:.65">Bucket ${i+1} of ${d.colors.length}</div>
+        <div class="ob-count" style="color:var(--obText,var(--obInk));font-weight:700">Bucket ${i+1} of ${d.colors.length}</div>
         <h2 class="ob-title">Make ${esc(c.name)} yours</h2>
         <p class="ob-sub">Tweak anything — or just keep going.</p>
         ${bucketEditorHTML(c, {draft:true, actions:false})}`;
@@ -954,8 +960,8 @@ const OB = {
       d.customPal = d.customPal||[];
       if(d.palKey!=='custom' || d.customPal.length===6) applyBlockPalette(d.palKey||'brand', d.colors, d.customPal);
       b.innerHTML = `
-        <h2 class="ob-title">Choose your block colors</h2>
-        <p class="ob-sub">Six colors that go together. Your buckets wear them in order — you can re-pick any time in Settings.</p>
+        <h2 class="ob-title">Choose your colors</h2>
+        <p class="ob-sub">Six colors that go together — buckets wear them in order. Re-pick any time in Settings.</p>
         ${BLOCK_PALETTES.map(bp=>palCardHTML(bp, (d.palKey||'brand')===bp.key)).join('')}
         ${(S.settings.savedPals||[]).map(sp=>savedCardHTML(sp, (d.palKey||'brand')==='saved:'+sp.id)).join('')}
         ${customCardHTML(d.customPal, (d.palKey||'brand')==='custom')}
@@ -984,22 +990,22 @@ const OB = {
         <h2 class="ob-title">Does the week fit?</h2>
         <p class="ob-sub">Your goals, in day-slots — against what one of your days can hold.</p>
         <div class="paper-list" id="recapList">${d.colors.map(c=>{ if(this.recapEdit===c.id) return bucketEditorHTML(c, {draft:true}); const p = palFor(c); return `
-          <div class="recap-row" data-ord="${c.id}" style="background:${p.fill}">
-            <span class="drag-h" style="color:rgba(51,65,77,.5)" aria-label="Drag to reorder">⠿</span>
-            <span class="swatch" style="background:${p.light};border:none;width:32px;height:32px;border-radius:10px;--swk:${iconInkFor(c, p.light)}">${ic(c.icon)}</span>
-            <strong style="flex:1;color:#33414D">${esc(c.name)}</strong>
-            <span class="mono" style="font-size:12.5px;color:rgba(51,65,77,.65)">${fmtSlots(c.slots||1)} · ${c.goal}×/wk = ${c.goal*(c.slots||1)}</span>
-            <span class="cr-pencil" style="color:rgba(51,65,77,.55)">${ic('pen')}</span>
+          <div class="recap-row" data-ord="${c.id}" style="background:${p.fill}">${(tk=>`
+            <span class="drag-h" style="color:${tk}" aria-label="Drag to reorder">⠿</span>
+            <span class="swatch" style="background:${p.fill};border:1.5px solid ${iconInkFor(c, p.fill)};width:32px;height:32px;border-radius:10px;--swk:${iconInkFor(c, p.fill)}">${ic(c.icon)}</span>
+            <strong style="flex:1;color:${tk}">${esc(c.name)}</strong>
+            <span class="mono" style="font-size:14px;color:${tk}">${fmtSlots(c.slots||1)} · ${c.goal}×/wk = ${c.goal*(c.slots||1)}</span>
+            <span class="cr-pencil" style="color:${tk};opacity:.85">${ic('pen')}</span>`)(iconInkFor(c, p.fill))}
           </div>`; }).join('')}</div>
         <div class="bc-label" style="margin-top:18px">Slots you'll give one day</div>
         <div style="display:flex;align-items:center;gap:14px">
-          <input type="range" id="rcSlider" min="2" max="16" step="1" value="${d.maxSlots}" style="flex:1;accent-color:var(--ink)">
+          <input type="range" id="rcSlider" min="2" max="16" step="1" value="${d.maxSlots}" style="flex:1;accent-color:var(--aqua)">
           <span class="mono" style="font-size:20px;min-width:34px;text-align:center" id="rcVal">${d.maxSlots}</span>
         </div>
         <div class="fit-card ${fits?'ok':'over'}">
           <div><strong>${goalSlots}</strong> slots of goals per week</div>
           <div><strong>${capacity}</strong> slots you'd have (${d.maxSlots} × 7 days)</div>
-          <div class="fit-verdict">${fits ? '✓ It fits — with '+(capacity-goalSlots)+' slots of air.' : '✕ Over by '+(goalSlots-capacity)+' — shrink a goal or give days more room.'}</div>
+          <div class="fit-verdict">${fits ? '✓ Kachunk it. — '+(capacity-goalSlots)+' slots of air.' : '✕ Over by '+(goalSlots-capacity)+' — shrink a goal or give days more room.'}</div>
         </div>`;
       $('#rcSlider').oninput = e=>{ d.maxSlots = +e.target.value; this.render(); };
       $$('#recapList .recap-row').forEach(row=>{
@@ -1028,8 +1034,8 @@ const OB = {
       this.paint(null);
       b.innerHTML = `
         <h2 class="ob-title">One notification. Yours.</h2>
-        <p class="ob-sub">The Roundup — a once-a-day nudge to reconcile stray blocks. That's the only ping Kachunk will ever send.</p>
-        <div class="set-group"><h3>The Roundup</h3>
+        <p class="ob-sub">Restack — a once-a-day nudge to reconcile stray blocks. The only ping you'll ever get.</p>
+        <div class="set-group"><h3>Restack</h3>
           <div class="set-card">
             <div class="set-row"><span class="grow">Daily nudge at</span>
               <input type="time" id="obTime" value="${d.roundupTime}"></div>
@@ -1048,6 +1054,7 @@ const OB = {
 
     if(key==='go'){
       this.paint('#F8F6F2', '#33414D');
+      if(!this._riffPlayed){ this._riffPlayed = true; sfx('riff'); }
       const first = d.name ? esc(d.name.trim().split(' ')[0]) : '';
       const blocks = d.colors.reduce((a,c)=>a+c.goal, 0);
       b.innerHTML = `
@@ -1086,7 +1093,7 @@ const OB = {
     this.paint(null);
     spawnWeek(); save();
     show('#screen-floor'); Floor.rebuild();
-
+    Floor.firstArrow(); // one-time: show how blocks move from the stack into today
   },
   back(){ if(this.step===0){ this.paint(null); show('#screen-splash'); return; } this.step--; this.render(); }
 };
@@ -1126,21 +1133,22 @@ function bucketEditorHTML(c, opts={}){
   return `<div class="bucket-card be-card" data-be="${c.id}" data-ord="${c.id}">
     <div class="bc-head">
       <button class="swatch" data-f="look" style="width:46px;height:46px;background:${p.fill};border-color:${p.edge};--swk:${iconInkFor(c,p.fill)}" title="Change look">${ic(c.icon)}</button>
-      <input type="text" data-f="bname" value="${esc(c.name)}" aria-label="Bucket name" style="font-weight:700;font-size:17px">
+      <input type="text" data-f="bname" value="${esc(c.name)}" aria-label="Bucket name" style="font-weight:700;font-size:18px">
     </div>
     ${chipsHost ? `<div class="mode-pick" style="margin-top:14px">
       <button type="button" class="mode-card ${!chipsHost.chips?'on':''}" data-mode="chunk">
         <strong>Start to Finish</strong>
-        <span>One block of time — gym, coffee, meditation.</span>
+        <span>One block of time — gym, coffee.</span>
       </button>
       <button type="button" class="mode-card ${chipsHost.chips?'on':''}" data-mode="allday">
         <strong>Ongoing</strong>
-        <span>Small chunks that add up — water, calories, gratitude.</span>
+        <span>Small chunks — water, calories.</span>
       </button>
     </div>
-    <div data-f="chipcfg">${chipConfigHTML(chipsHost.chips, goal, c.name)}</div>` : ''}
+    <div data-f="chipcfg">${chipConfigHTML(chipsHost.chips, goal, c.name, p)}</div>` : ''}
     <div class="be-group">
       <div class="be-lab">How big is your block?</div>
+      <div class="be-note be-note-lead">No right answers — bigger for long things (gym), smaller for quick ones (water).</div>
       <div class="size-pick">
         <button data-f="s-" aria-label="Smaller">−</button>
         <div class="size-stage">
@@ -1149,12 +1157,11 @@ function bucketEditorHTML(c, opts={}){
         </div>
         <button data-f="s+" aria-label="Bigger">＋</button>
       </div>
-      <div class="be-note">Bigger blocks take more of your day.</div>
     </div>
     ${(chipsHost&&chipsHost.chips)?'':`<div class="be-group">
       <div class="be-lab">How many times a week?</div>
+      <div class="be-note be-note-lead">This adds blocks into your stack.${isDraft?'':' Changes land when you restack.'}</div>
       <div class="stepper stepper-center"><button data-f="g-">−</button><span class="val">${goal}</span><button data-f="g+">＋</button></div>
-      <div class="be-note">This adds blocks into your stack.${isDraft?'':' Changes land when you restack.'}</div>
     </div>`}
     ${opts.actions===false?'':`<div class="sheet-actions" style="margin-top:14px">
       <button class="btn-danger" data-f="del" style="flex:none;padding:11px 16px">Remove</button>
@@ -1286,7 +1293,7 @@ function openColorPicker(c, onDone){
       <svg viewBox="0 0 24 24" style="width:21px;height:21px;stroke:var(--ink);stroke-width:1.2;fill:none;stroke-linecap:round;stroke-linejoin:round">${ICONS[n]||ICONS.star}</svg>
     </button>`).join('');
   Sheet.open(`
-    <h3>Looks</h3>
+    <h3>Block Appearance</h3>
     <p class="sh-sub">Color + icon. The palette keeps things calm — or go rogue with your own hex.</p>
     <div style="display:flex;flex-wrap:wrap;gap:10px">${(()=>{
       // offer the ACTIVE palette's six, not always the pastels (draft palette mid-onboarding)
@@ -1359,6 +1366,19 @@ function inkFor(fill){ // icon/text color on a block face — leans paper on mid
   const n = parseInt(fill.slice(1),16), r=n>>16, g=(n>>8)&255, b=n&255;
   return (0.299*r+0.587*g+0.114*b) > 165 ? '#33414D' : '#FDFBF7';
 }
+/* WCAG contrast machinery — page/body text on tinted surfaces (blocks keep inkFor) */
+function relLum(hex){ const n=parseInt(hex.slice(1),16);
+  const f=v=>{ v/=255; return v<=0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4); };
+  return 0.2126*f(n>>16) + 0.7152*f((n>>8)&255) + 0.0722*f(n&255); }
+function contrastHex(a,b){ const la=relLum(a), lb=relLum(b);
+  return (Math.max(la,lb)+0.05)/(Math.min(la,lb)+0.05); }
+/* small text on a tint: near-black unless white genuinely wins (dark tints) */
+function textInkFor(fill){ return contrastHex('#1C242B',fill) >= contrastHex('#FFFFFF',fill) ? '#1C242B' : '#FFFFFF'; }
+/* page text on tinted onboarding pages — founder call 2026-07-18: paper on every tint deep
+   enough to carry it (terracotta, slate, sage, clay); near-ink only on the light pastels */
+function pageInkFor(fill){ return contrastHex('#FDFBF7',fill) >= 2.6 ? '#FDFBF7' : '#1C242B'; }
+/* large display text on a tint: keep the airy paper look wherever it clears WCAG large-text 3:1 */
+function titleInkFor(fill){ return contrastHex('#FDFBF7',fill) >= 3.0 ? '#FDFBF7' : '#1C242B'; }
 /* icon → a starter bucket name that goes with it */
 const ICON_NAMES = {dumbbell:'Move', bike:'Ride', footprints:'Walk', activity:'Cardio', heart:'Care', prayer:'Pray',
   droplet:'Water', pill:'Meds', brain:'Deep work', stethoscope:'Health', bed:'Sleep', moon:'Rest', alarm_clock:'Up early',
@@ -1698,13 +1718,13 @@ const Floor = {
         const shelf = a.isShelf ? a : (b.isShelf ? b : null);
         if(!shelf) continue;
         const blk = shelf===a ? b : a;
-        if(blk.isStatic || blk.position.y < shelf.position.y) continue; // only hits from underneath
+        if(blk.isStatic || blk.isChip || blk.position.y < shelf.position.y) continue; // only real blocks, only from underneath
         const up = -blk.velocity.y;
         if(up < 6) continue; // needs a real slam, not a resting nudge
         const power = Math.min(up, 24);
         let thumped = false;
         for(const other of this.bodies.values()){
-          if(other === blk || other.position.y > shelf.position.y) continue;      // stays their side
+          if(other === blk || other.isChip || other.position.y > shelf.position.y) continue; // stays their side; ghost chips exempt
           if(other.position.y < shelf.position.y - 170) continue;                 // only the shelf layer
           const dx = Math.abs(other.position.x - blk.position.x);
           if(dx > 110) continue;                                                  // local, like a cue hit
@@ -1726,6 +1746,23 @@ const Floor = {
           const above = body.position.y < this.planY();
           const want = above ? 0 : -1;
           if(body.collisionFilter.mask !== want){ body.collisionFilter.mask = want; if(!above) Matter.Sleeping.set(body, false); }
+          // chips are embers, not rockets: cap their launch speed, and if one is ever found
+          // way above the divider, send it straight home to the today zone
+          if(above && (body.position.y < this.planY()-190 || body.velocity.y < -15)){
+            Matter.Body.setPosition(body, {x:clamp(body.position.x, 26, this.W-26), y:this.planY()+50});
+            Matter.Body.setVelocity(body, {x:body.velocity.x*0.3, y:2});
+          }
+        }
+        // containment: nothing leaves the world — over the wall tops, out a resized edge, or
+        // into the stratosphere. Clamp back inside and damp; the zone guards then re-sort it.
+        for(const body of this.bodies.values()){
+          if(this.dragging === body || body.fadeT0) continue;
+          const p = body.position;
+          if(p.x < 12 || p.x > this.W-12 || p.y < -320 || p.y > this.floorY()+60){
+            Matter.Body.setPosition(body, {x:clamp(p.x, 26, this.W-26), y:clamp(p.y, -140, this.floorY()-40)});
+            Matter.Body.setVelocity(body, {x:body.velocity.x*0.2, y:clamp(body.velocity.y, -2, 6)});
+            Matter.Sleeping.set(body, false);
+          }
         }
         Matter.Engine.update(this.engine, 1000/60);
         // backstop: any chip queued to pop that somehow lingered despawns quietly
@@ -1742,6 +1779,13 @@ const Floor = {
               const blk = S.week.blocks.find(x=>x.id===body.blockId);
               if(blk){ DayB.setPlanned(blk, false); this.updateHeader(); }
             }
+            // and the reverse: an UNPLANNED block below the shelf was never dragged there —
+            // lift it back to the week pile (this is the "blocks dropped to Today on load" bug)
+            if(!body.isChip && !body.fadeT0 && body.position.y > this.planY()+10 && !DayB.isPlanned(body.blockId)){
+              Matter.Body.setPosition(body, {x:clamp(body.position.x,30,this.W-30), y:this.planY()-80});
+              Matter.Body.setVelocity(body, {x:0, y:0});
+              Matter.Sleeping.set(body, false);
+            }
           }
         }
         this.draw();
@@ -1749,7 +1793,16 @@ const Floor = {
       requestAnimationFrame(loop);
     };
     requestAnimationFrame(loop);
-    window.addEventListener('resize', ()=>{ this.layout(); this.syncBuckets(); });
+    window.addEventListener('resize', ()=>{
+      this.layout(); this.syncBuckets();
+      for(const body of this.bodies.values()){ // new walls — pull strays inside right away
+        if(this.dragging === body) continue;
+        if(body.position.x < 12 || body.position.x > this.W-12){
+          Matter.Body.setPosition(body, {x:clamp(body.position.x, 26, this.W-26), y:Math.min(body.position.y, this.floorY()-40)});
+          Matter.Body.setVelocity(body, {x:0, y:0}); Matter.Sleeping.set(body, false);
+        }
+      }
+    });
   },
 
   BUCKET_H:118,
@@ -1788,7 +1841,7 @@ const Floor = {
     ];
     // the divider — solid both ways, but kinetic: slam a block into it from below
     // and the impact thumps through to the pile above (pool-ball rules)
-    const shelf = Matter.Bodies.rectangle(this.W/2, this.planY()+5, this.W*2, 10, {isStatic:true, restitution:0.9});
+    const shelf = Matter.Bodies.rectangle(this.W/2, this.planY()+16, this.W*2, 32, {isStatic:true, restitution:0.9});
     shelf.isShelf = true;
     this.walls.push(shelf);
     Matter.World.add(this.engine.world, this.walls);
@@ -1818,13 +1871,26 @@ const Floor = {
     // clear existing block bodies
     for(const b of this.bodies.values()) Matter.World.remove(this.engine.world, b);
     this.bodies.clear();
-    for(const block of trayBlocks()){
+    // week pile spawns on a jittered grid — random overlap on big first loads made the
+    // solver eject blocks hard enough to tunnel the divider into Today (field bug)
+    const tray = trayBlocks();
+    const maxS = Math.max(40, ...tray.map(b=>this.sizeFor(b.colorId)));
+    const cell = maxS+8, margin = 34;
+    const cols = Math.max(1, Math.floor((this.W-margin*2)/cell));
+    let slot = 0;
+    for(const block of tray){
       const body = this.bodyFor(block); if(!body) continue;
-      // planned blocks respawn in the today zone, not the week pile
       if(DayB.isPlanned(block.id)){
+        // planned blocks respawn in the today zone, not the week pile
         Matter.Body.setPosition(body, {x:40+Math.random()*(this.W-80), y:this.planY()+70+Math.random()*80});
-        Matter.Body.setVelocity(body, {x:0, y:0});
+      } else {
+        const col = slot%cols, row = Math.floor(slot/cols); slot++;
+        Matter.Body.setPosition(body, {
+          x: clamp(margin + cell/2 + col*cell + (Math.random()*8-4) + (row%2)*cell/2, 30, this.W-30),
+          y: 50 + row*cell + (Math.random()*6-3),
+        });
       }
+      Matter.Body.setVelocity(body, {x:0, y:0});
       this.bodies.set(block.id, body);
       Matter.World.add(this.engine.world, body);
     }
@@ -1849,8 +1915,8 @@ const Floor = {
           <path d="M31.5 44 Q29.5 64 32.5 82" fill="none" stroke="${p.light}" stroke-width="5" stroke-linecap="round" opacity="0.75"/>
           <g transform="translate(38 48) scale(1.05)" fill="none" stroke="${iconInkFor(c, p.fill)}" stroke-opacity="0.6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${ICONS[c.icon]||ICONS.star}</g>
         </svg>
-        <div style="font-size:12px;font-weight:700;color:var(--ink);line-height:1.15;padding:0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(bk.name)}</div>
-        <div class="mono" style="font-size:11px;color:var(--muted)">${done}/${c.goal}${(n=>n?` <span style="color:var(--good);font-weight:700">+${n}</span>`:'')(S.week.blocks.filter(b=>b.colorId===c.id && b.status==='dropped' && b.ts && dayKey(new Date(b.ts))===dayKey()).length * ((c.slotSize||1)))}</div>
+        <div style="font-size:14px;font-weight:700;color:var(--ink);line-height:1.15;padding:0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(bk.name)}</div>
+        <div class="mono" style="font-size:13px;color:var(--muted)">${done}/${c.goal}${(n=>n?` <span style="color:var(--good-ink,var(--good));font-weight:700">+${n}</span>`:'')(S.week.blocks.filter(b=>b.colorId===c.id && b.status==='dropped' && b.ts && dayKey(new Date(b.ts))===dayKey()).length * ((c.slotSize||1)))}</div>
       </button>`;
     }).join('');
     this.bucketRects = $$('#bucketRow .bucket-hit').map(el=>{
@@ -1953,7 +2019,7 @@ const Floor = {
     $('#screen-floor').classList.add('board-live');
     const pop = $('#sweepPop'); pop.hidden = false;
     const strong = pop.querySelector('strong');
-    if(strong) strong.textContent = kind==='day' ? 'Goodnight.' : 'Week sweep.';
+    if(strong) strong.textContent = kind==='day' ? 'Goodnight.' : 'Restack.';
     $('#spRestack').hidden = (kind==='day');
     this.updateSweepPop();
   },
@@ -2219,6 +2285,26 @@ const Floor = {
   },
   pause(){ this.paused = true; },
   resume(){ this.paused = false; },
+
+  /* one-time onboarding hint: an arrow from the week stack down into today */
+  firstArrow(){
+    if(S.settings.arrowShown) return;
+    S.settings.arrowShown = true; save();
+    const stage = $('#floorStage'); if(!stage) return;
+    const el = document.createElement('div');
+    el.className = 'first-arrow';
+    el.innerHTML = `<svg viewBox="0 0 60 150" aria-hidden="true">
+      <path d="M30 8 C 44 46, 44 92, 30 122" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-dasharray="1 9"/>
+      <path d="M18 108 L30 126 L42 108" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg><span>drag one down</span>`;
+    const place = ()=>{ el.style.top = (this.planY()-96)+'px'; };
+    place(); stage.appendChild(el);
+    const done = ()=>{ el.classList.add('out'); setTimeout(()=>el.remove(), 400);
+      stage.removeEventListener('pointerdown', done); window.removeEventListener('resize', place); };
+    stage.addEventListener('pointerdown', done, {once:true});
+    window.addEventListener('resize', place);
+    setTimeout(done, 12000);
+  },
 };
 
 /* ═════════ BUCKET SHEET ═════════ */
@@ -2435,13 +2521,12 @@ const Receipts = {
     const avg = Math.round(basis.reduce((a,w)=>a+this.completedOf(w),0) / basis.length * 10) / 10;
     const best = Math.max(...weeks.map(w=>this.completedOf(w)));
     const palOf = i => PALETTE[i % PALETTE.length];
-    const miniBlocks = (n, cap=12) => {
-      const full = Math.min(Math.floor(n), cap);
-      const frac = n - Math.floor(n);
+    const miniBlocks = (n) => {
+      const full = Math.floor(n);
+      const frac = n - full;
       let h = '';
       for(let i=0;i<full;i++){ const p = palOf(i); h += `<i style="background:${p.fill};border:1px solid ${p.edge}"></i>`; }
-      if(frac > 0.05 && full < cap){ const p = palOf(full); h += `<i style="background:${p.fill};border:1px solid ${p.edge};opacity:.45"></i>`; }
-      if(Math.floor(n) > cap) h += `<em>+${Math.floor(n)-cap}</em>`;
+      if(frac > 0.05){ const p = palOf(full); h += `<i style="background:${p.fill};border:1px solid ${p.edge};opacity:.45"></i>`; }
       return `<div class="mini-blocks">${h||'<i style="background:var(--hairline);border:1px solid var(--hairline)"></i>'}</div>`;
     };
     const cards = weeks.map(w=>{
@@ -2450,29 +2535,29 @@ const Receipts = {
         const p = palFor(x);
         const count = x.done + x.partial;
         if(!count) return '';
-        return Array.from({length:Math.min(count,14)},()=>`<i style="background:${p.fill};border:1px solid ${p.edge}" title="${esc(x.name)}"></i>`).join('') + '<span class="gap"></span>';
+        return `<div class="wk-row">${Array.from({length:count},()=>`<i style="background:${p.fill};border:1px solid ${p.edge}" title="${esc(x.name)}"></i>`).join('')}</div>`;
       }).join('');
       return `<div class="wk-card">
-        <div class="wk-head"><span class="wk-n">${n}</span><span class="muted" style="font-size:13px">block${n===1?'':'s'}${w.live?' · this week':''}</span>
+        <div class="wk-head"><span class="wk-n">${n}</span><span class="muted" style="font-size:14px">block${n===1?'':'s'}${w.live?' · this week':''}</span>
         <span class="wk-range">${fmtRange(w.start)}</span></div>
-        ${dots?`<div class="wk-dots">${dots}</div>`:'<div class="muted" style="font-size:12px;margin-top:6px">nothing claimed yet</div>'}
+        ${dots?`<div class="wk-dots">${dots}</div>`:'<div class="muted" style="font-size:14px;margin-top:6px">nothing claimed yet</div>'}
       </div>`;
     }).join('');
     const avgLabel = archived.length
-      ? `avg blocks / week<br>(last ${archived.length===1?'week':archived.length+' weeks'})`
+      ? `avg / week<br>(last ${archived.length===1?'week':archived.length+' weeks'})`
       : `blocks so far<br>(this week)`;
     $('#receiptsBody').innerHTML = `
       <div class="set-group"><h3>How it's going</h3>
         <div class="avg-row">
           <div class="avg-cell"><div class="n">${avg}</div>${miniBlocks(avg)}<div class="t">${avgLabel}</div></div>
           <div class="avg-cell"><div class="n">${best}</div>${miniBlocks(best)}<div class="t">best week<br>yet</div></div>
-          <div class="avg-cell"><div class="n">${weeks.length}</div>${miniBlocks(weeks.length,7)}<div class="t">weeks<br>tracked</div></div>
+          <div class="avg-cell"><div class="n">${weeks.length}</div>${miniBlocks(weeks.length)}<div class="t">weeks<br>tracked</div></div>
         </div>
       </div>
       <div class="set-group"><h3>Week by week</h3>
         ${cards}
       </div>
-      <p class="muted" style="text-align:center;font-size:12px;margin-top:14px">Only claimed blocks are counted. Unclaimed weeks aren't held against you.</p>`;
+      <p class="muted" style="text-align:center;font-size:14px;margin-top:14px">Only claimed blocks are counted. Unclaimed weeks aren't held against you.</p>`;
   }
 };
 
@@ -2487,7 +2572,7 @@ const Settings = {
     return `<div class="fit-card ${fits?'ok':'over'}" id="setFitCard">
       <div><strong>${goalSlots}</strong> slots of goals per week</div>
       <div><strong>${capacity}</strong> slots you'd have (${S.day.maxSlots} × 7 days)</div>
-      <div class="fit-verdict">${fits ? '✓ It fits — with '+(capacity-goalSlots)+' slots of air.' : '✕ Over by '+(goalSlots-capacity)+' — shrink a goal or give days more room.'}</div>
+      <div class="fit-verdict">${fits ? '✓ Kachunk it. — '+(capacity-goalSlots)+' slots of air.' : '✕ Over by '+(goalSlots-capacity)+' — shrink a goal or give days more room.'}</div>
     </div>`;
   },
   addBucket(){
@@ -2507,7 +2592,7 @@ const Settings = {
     return `<div class="bucket-card be-card be-new">
       <div class="bc-head">
         <button class="swatch" data-f="look" style="width:46px;height:46px;background:${p.fill};border-color:${p.edge};--swk:${iconInkFor(nd,p.fill)}" title="Change look">${ic(nd.icon)}</button>
-        <input type="text" data-f="bname" placeholder="Name your bucket" aria-label="Bucket name" style="font-weight:700;font-size:17px">
+        <input type="text" data-f="bname" placeholder="Name your bucket" aria-label="Bucket name" style="font-weight:700;font-size:18px">
       </div>
       <div class="set-note" style="padding:6px 2px 0">Icon + name together give the best starting guess — everything's tunable after.</div>
       <div class="sheet-actions" style="margin-top:12px">
@@ -2521,7 +2606,7 @@ const Settings = {
     const bk = S.buckets.find(b=>b.colorId===c.id);
     if(this.editingId===c.id) return bucketEditorHTML(c, {bucket:bk});
     const goal = S.nextGoals[c.id] ?? c.goal;
-    const meta = [`${goal}×/wk`, (c.slotSize||1)!==1?fmtSlots(c.slotSize):null, (bk&&bk.chips)?'small chunks':null].filter(Boolean).join(' · ');
+    const meta = [`${goal}×/wk`, (c.slotSize||1)!==1?fmtSlots(c.slotSize):null, (bk&&bk.chips)?`<span class="cr-chunks" title="small chunks" aria-label="small chunks">${ic('chunk')}</span>`:null].filter(Boolean).join(' · ');
     return `<div class="color-row cr-tap" data-c="${c.id}" data-ord="${c.id}" role="button">
       <span class="drag-h" aria-label="Drag to reorder">⠿</span>
       <span class="swatch" style="background:${p.fill};border-color:${p.edge};--swk:${iconInkFor(c, p.fill)}">${ic(c.icon)}</span>
@@ -2532,7 +2617,8 @@ const Settings = {
   },
   render(){
     $('#settingsBody').innerHTML = `
-      <div class="set-group"><h3>The Roundup</h3>
+      <div class="set-group"><h3>Restack</h3>
+        <div class="set-note set-intro">Exactly one notification a day — Restack. On iPhone, Add to Home Screen first.</div>
         <div class="set-card">
           <div class="set-row"><span class="grow">Daily nudge at</span>
             <input type="time" id="setTime" value="${S.settings.roundupTime}"></div>
@@ -2540,7 +2626,7 @@ const Settings = {
             <label class="switch"><input type="checkbox" id="setSound" ${S.settings.sound?'checked':''}><span class="knob"></span></label></div>
           <div class="set-row"><span class="grow">Plan tomorrow ahead</span>
             <label class="switch"><input type="checkbox" id="setPlanTmrw" ${S.settings.planTomorrow?'checked':''}><span class="knob"></span></label></div>
-          <div class="set-note">Kachunk sends exactly one notification a day — the Roundup — and only when the app can. On iPhone, Add to Home Screen first. “Plan tomorrow ahead” lets new picks pre-fill tomorrow’s shelf once today’s plan is fully banked.</div>
+          <div class="set-note">Pre-fills tomorrow’s shelf once today is banked.</div>
         </div>
       </div>
       <div class="set-group"><h3>Appearance</h3>
@@ -2550,21 +2636,21 @@ const Settings = {
         </div>
       </div>
       <div class="set-group"><h3>Block colors</h3>
+        <div class="set-note set-intro">Switching recolors every bucket, in order. Build your own to save palettes.</div>
         ${BLOCK_PALETTES.map(bp=>palCardHTML(bp, (S.settings.blockPal||'brand')===bp.key)).join('')}
         ${(S.settings.savedPals||[]).map(sp=>savedCardHTML(sp, (S.settings.blockPal||'brand')==='saved:'+sp.id)).join('')}
         ${customCardHTML(S.settings.customPal||[], (S.settings.blockPal||'brand')==='custom')}
-        <div class="set-note">Switching re-bases every bucket to the new palette, in order. Build your own to name &amp; save palettes.</div>
       </div>
       <div class="set-group"><h3>Buckets & goals</h3>
+        <div class="set-note set-intro">Tap a bucket to edit it. Drag to reorder — goal changes land when you restack.</div>
         <div id="setColors">${S.colors.map(c=>this.colorRow(c)).join('')}${this.newDraft ? this.newCardHTML() : ''}</div>
-        <button class="btn btn-ghost" id="addColor" style="width:100%" ${S.colors.length>=6?'disabled style="opacity:.5"':''}>${S.colors.length>=6?"Six\u2019s the max — swap one out to add another":`＋ Add a bucket (${S.colors.length}/6)`}</button>
-        <div class="set-note" style="padding:8px 2px">Tap a bucket to edit everything about it. Drag ⠿ to reorder — palettes apply their colors in this order. Goal changes land when you restack.</div>
+        <button class="btn btn-add" id="addColor" style="width:100%" ${S.colors.length>=6?'disabled style="opacity:.5"':''}>${S.colors.length>=6?"Six\u2019s the max — swap one out to add another":`＋ Add a bucket (${S.colors.length}/6)`}</button>
       </div>
       <div class="set-group"><h3>Does the week fit?</h3>
         <div class="set-card" style="padding:4px 18px 14px">
           <div class="bc-label" style="margin-top:12px">Slots you'll give one day</div>
           <div style="display:flex;align-items:center;gap:14px">
-            <input type="range" id="setFitSlider" min="2" max="${Math.max(16,S.day.maxSlots)}" step="1" value="${S.day.maxSlots}" style="flex:1;accent-color:var(--ink)">
+            <input type="range" id="setFitSlider" min="2" max="${Math.max(16,S.day.maxSlots)}" step="1" value="${S.day.maxSlots}" style="flex:1;accent-color:var(--aqua)">
             <span class="mono" style="font-size:20px;min-width:34px;text-align:center" id="setFitVal">${S.day.maxSlots}</span>
           </div>
         </div>
@@ -2578,6 +2664,7 @@ const Settings = {
           </button>`).join('')}
       </div>
       <div class="set-group"><h3>Your data</h3>
+        <div class="set-note set-intro">Everything lives on this device. Export a backup any time; import on a new phone.</div>
         <div class="set-card">
           <div class="set-row set-act" id="expData" role="button" tabindex="0">
             <span class="set-ic">${ic('download')}</span><span class="grow">Export backup</span><span class="set-hint">.json</span></div>
@@ -2586,10 +2673,9 @@ const Settings = {
           <div class="set-row set-act set-act-danger" id="resetAll" role="button" tabindex="0">
             <span class="set-ic">${ic('trash')}</span><span class="grow">Start completely over</span></div>
         </div>
-        <div class="set-note">Everything lives on this device — no account, no server. Export a backup any time; import it on a new phone.</div>
         <input type="file" id="impFile" accept=".json" hidden>
       </div>
-      <p class="muted" style="text-align:center;font-size:12px">Kachunk v1 prototype · local-first · no tracking, no server, no streaks</p>`;
+      <p class="muted" style="text-align:center;font-size:14px">Kachunk v1 prototype · local-first · no tracking, no server, no streaks</p>`;
     // bindings
     $$('#settingsBody .voice-card').forEach(el=>el.onclick=()=>{
       S.settings.voice=el.dataset.v; save(); this.render();
@@ -2780,9 +2866,9 @@ const DayB = {
       return `<div class="ru-blockline" data-id="${it.id}" style="justify-content:space-between">
         <span style="display:flex;align-items:center;gap:9px;min-width:0"><span class="ru-mini" style="background:${p.fill};border-color:${p.edge}">${ic(c?c.icon:'star')}</span><strong>${esc(c?c.name:'Block')}</strong></span>
         <span style="display:flex;gap:6px;flex:none">
-          <button class="btn btn-ghost" data-act="log" style="padding:7px 12px;font-size:12.5px">It happened ✓</button>
-          <button class="btn btn-ghost" data-act="keep" style="padding:7px 12px;font-size:12.5px">Keep</button>
-          <button class="btn btn-ghost" data-act="toss" style="padding:7px 12px;font-size:12.5px">Toss</button>
+          <button class="btn btn-ghost" data-act="log" style="padding:7px 12px;font-size:13.5px">It happened ✓</button>
+          <button class="btn btn-ghost" data-act="keep" style="padding:7px 12px;font-size:13.5px">Keep</button>
+          <button class="btn btn-ghost" data-act="toss" style="padding:7px 12px;font-size:13.5px">Toss</button>
         </span></div>`;
     }).join('');
     $('#screen-floor').classList.add('board-live');
@@ -2848,7 +2934,7 @@ function applyTheme(){
 function boot(){
   load();
   applyTheme();
-  // week rollover check: if stored week started 7+ days ago, we do NOT auto-reset — Roundup handles it.
+  // week rollover check: if stored week started 7+ days ago, we do NOT auto-reset — Restack handles it.
   document.body.addEventListener('pointerdown', ()=>{
     if(S.settings.sound) ac();
     try{ if(window.DeviceMotionEvent && typeof DeviceMotionEvent.requestPermission==='function') DeviceMotionEvent.requestPermission().catch(()=>{}); }catch(e){}
