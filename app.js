@@ -670,19 +670,28 @@ function sfx(kind, opt={}){
       g.gain.setValueAtTime(0.12*v,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.09);
       o.connect(g); o.start(t); o.stop(t+0.1);
     } else if(kind==='clink'){
-      // blocks touching blocks: a soft, calming clink — muted wooden wind-chime, never sharp
+      // blocks softly colliding: a woody knock with just a hint of tone — melodic, never chimey.
+      // pitch scales with physical size: big blocks knock deep, little chunks tap high.
       const v = clamp(opt.v||0.5, 0.08, 1);
-      const notes = opt.hi ? [1046.5,1174.7,1318.5,1568,1760] : [523.25,587.33,659.25,783.99,880]; // pentatonic-ish, chips ring an octave up
-      const f = notes[Math.floor(Math.random()*notes.length)] * (1 + (Math.random()-.5)*0.012);
-      const flt = ctx.createBiquadFilter(); flt.type='lowpass'; flt.frequency.value = 2200; flt.Q.value = 0.4;
+      const notes = [523.25,587.33,659.25]; // narrow set — variation, not melody
+      const f = notes[Math.floor(Math.random()*notes.length)] * clamp(opt.pitch||1, 0.6, 2.2) * (1 + (Math.random()-.5)*0.015);
+      const flt = ctx.createBiquadFilter(); flt.type='lowpass'; flt.frequency.value = 1500; flt.Q.value = 0.3;
       const g = out(); flt.connect(g);
+      // the knock — a quick low thud carries the body of the sound (own path, own envelope)
+      const kOut = out();
+      const ko = ctx.createOscillator(); ko.type='triangle';
+      ko.frequency.setValueAtTime(f*0.32, t); ko.frequency.exponentialRampToValueAtTime(f*0.2, t+0.045);
+      kOut.gain.setValueAtTime(0.085*v, t); kOut.gain.exponentialRampToValueAtTime(0.0008, t+0.06);
+      ko.connect(kOut);
+      // the tone — short and quiet on top, decays fast so it taps instead of rings
       const o = ctx.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(f, t);
-      const o2 = ctx.createOscillator(); o2.type='sine'; o2.frequency.setValueAtTime(f*2.41, t); // soft inharmonic partial = woody
-      const g2 = ctx.createGain(); g2.gain.value = 0.22; o2.connect(g2); g2.connect(flt);
+      const o2 = ctx.createOscillator(); o2.type='sine'; o2.frequency.setValueAtTime(f*2.41, t);
+      const g2 = ctx.createGain(); g2.gain.value = 0.12; o2.connect(g2); g2.connect(flt);
       o.connect(flt);
-      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.05*v, t+0.008); // gentle attack, no click
-      g.gain.exponentialRampToValueAtTime(0.0008, t+0.16);
-      o.start(t); o.stop(t+0.18); o2.start(t); o2.stop(t+0.12);
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.04*v, t+0.006);
+      g.gain.exponentialRampToValueAtTime(0.0008, t+0.085);
+      ko.start(t); ko.stop(t+0.07);
+      o.start(t); o.stop(t+0.1); o2.start(t); o2.stop(t+0.05);
     } else if(kind==='slide'){
       // sliding into today: soft descending shoop
       const g = out(); const o = ctx.createOscillator(); o.type='sine';
@@ -1088,11 +1097,13 @@ const fmtSlots = v => v===1 ? '1 slot' : `${v} slots`;
 function drawSizeBlock(cv, c, v){
   if(!cv) return;
   const x = cv.getContext('2d');
-  x.setTransform(2,0,0,2,0,0); // canvas is @2x of 96×78 css
+  x.setTransform(2,0,0,2,0,0); // canvas is @2x of 150×166 css
   const p = palFor(c);
-  const size = 22 * (1 + 0.22*(v-1)); // same growth curve as Floor.sizeFor
+  // TRUE floor size: same math the physics floor uses, so what you see is what drops
+  const base = clamp(Math.min(Math.min(window.innerWidth,520), 520)/9, 38, 54);
+  const size = base * (1 + 0.22*(v-1));
   const img = iconImage(c.icon, iconInkFor(c, p.fill));
-  const draw = ()=>{ x.clearRect(0,0,96,78); drawBlockShape(x, 48, 38, size, 'cube', p, -0.07, img); };
+  const draw = ()=>{ x.clearRect(0,0,150,166); drawBlockShape(x, 75, 76, size, 'cube', p, -0.07, img); };
   if(img.complete) draw(); else img.addEventListener('load', draw, {once:true});
 }
 function starterGuess(name, icon){
@@ -1117,8 +1128,7 @@ function bucketEditorHTML(c, opts={}){
       <button class="swatch" data-f="look" style="width:46px;height:46px;background:${p.fill};border-color:${p.edge};--swk:${iconInkFor(c,p.fill)}" title="Change look">${ic(c.icon)}</button>
       <input type="text" data-f="bname" value="${esc(c.name)}" aria-label="Bucket name" style="font-weight:700;font-size:17px">
     </div>
-    ${chipsHost ? `<div class="be-lab">How does <em class="be-name">${esc(c.name)}</em> happen?</div>
-    <div class="mode-pick">
+    ${chipsHost ? `<div class="mode-pick" style="margin-top:14px">
       <button type="button" class="mode-card ${!chipsHost.chips?'on':''}" data-mode="chunk">
         <strong>Start to Finish</strong>
         <span>One block of time — gym, coffee, meditation.</span>
@@ -1129,17 +1139,23 @@ function bucketEditorHTML(c, opts={}){
       </button>
     </div>
     <div data-f="chipcfg">${chipConfigHTML(chipsHost.chips, goal, c.name)}</div>` : ''}
-    ${(chipsHost&&chipsHost.chips)?'':`<div class="be-lab">How many times a week?<span>This adds blocks to claim each week.${isDraft?'':' Changes land when you restack.'}</span></div>
-    <div class="stepper"><button data-f="g-">−</button><span class="val">${goal}</span><button data-f="g+">＋</button></div>`}
-    <div class="be-lab">How big is your block?<span>Bigger blocks take more of your day.</span></div>
-    <div class="size-pick">
-      <button data-f="s-" aria-label="Smaller">−</button>
-      <div class="size-stage">
-        <canvas data-f="scv" width="192" height="156" aria-hidden="true"></canvas>
-        <div class="size-cap mono" data-f="scap">${fmtSlots(slots)}</div>
+    <div class="be-group">
+      <div class="be-lab">How big is your block?</div>
+      <div class="size-pick">
+        <button data-f="s-" aria-label="Smaller">−</button>
+        <div class="size-stage">
+          <canvas data-f="scv" width="300" height="332" aria-hidden="true"></canvas>
+          <div class="size-cap mono" data-f="scap">${fmtSlots(slots)}</div>
+        </div>
+        <button data-f="s+" aria-label="Bigger">＋</button>
       </div>
-      <button data-f="s+" aria-label="Bigger">＋</button>
+      <div class="be-note">Bigger blocks take more of your day.</div>
     </div>
+    ${(chipsHost&&chipsHost.chips)?'':`<div class="be-group">
+      <div class="be-lab">How many times a week?</div>
+      <div class="stepper stepper-center"><button data-f="g-">−</button><span class="val">${goal}</span><button data-f="g+">＋</button></div>
+      <div class="be-note">This adds blocks into your stack.${isDraft?'':' Changes land when you restack.'}</div>
+    </div>`}
     ${opts.actions===false?'':`<div class="sheet-actions" style="margin-top:14px">
       <button class="btn-danger" data-f="del" style="flex:none;padding:11px 16px">Remove</button>
       <button class="btn btn-primary" data-f="done" style="flex:1">Done</button>
@@ -1674,7 +1690,9 @@ const Floor = {
           const now = performance.now();
           if(rel > 2.2 && now - (this._lastClink||0) > 90){
             this._lastClink = now;
-            sfx('clink', {v: clamp(rel/16, 0.12, 0.8), hi: !!(a.isChip || b.isChip)});
+            const szOf = k => k.isChip ? (k.chipSize||20) : this.sizeFor(k.colorId);
+            const sz = (szOf(a)+szOf(b))/2; // avg physical size of the pair
+            sfx('clink', {v: clamp(rel/16, 0.12, 0.8), pitch: clamp(44/sz, 0.65, 2.1)});
           }
         }
         const shelf = a.isShelf ? a : (b.isShelf ? b : null);
@@ -2211,8 +2229,7 @@ const BucketSheet = {
     const done = droppedCount(c.id), left = trayBlocks(c.id).length;
     let html = `
       <h3><span class="swatch" style="display:inline-flex;width:30px;height:30px;border-radius:9px;background:${p.fill};border-color:${p.edge};--swk:${iconInkFor(c, p.fill)};vertical-align:-7px;margin-right:8px">${ic(c.icon)}</span>${esc(bk.name)}</h3>
-      <p class="sh-sub mono" id="bsWeekLine">${done}/${c.goal} this week${left?` · ${left} on the floor`:''}</p>
-      ${bk.notes?`<p style="font-size:14px;color:var(--text);background:var(--inset);border-radius:12px;padding:10px 12px">${esc(bk.notes)}</p>`:''}`;
+      <p class="sh-sub mono" id="bsWeekLine">${done}/${c.goal} this week${left?` · ${left} on the floor`:''}</p>`;
     const cfg = chunkCfg(bk.chips);
     const chunkLabel = t => `Today's small chunks — ${t}/${cfg.perDay}`
       + (cfg.unit ? ` · ${t*cfg.chunk} of ${cfg.total} ${esc(cfg.unit)}` : '')
@@ -2230,12 +2247,10 @@ const BucketSheet = {
     }
     html += `
       <div class="bc-label">${bk.chips?'Or log whole blocks':'Log it by number'}</div>
-      <div class="bigcount">
-        <button id="cntMinus">−</button><span class="val" id="cntVal">1</span><button id="cntPlus">＋</button>
-      </div>
+      <div class="stepper stepper-center" style="margin:12px 0 2px"><button id="cntMinus">−</button><span class="val" id="cntVal">1</span><button id="cntPlus">＋</button></div>
       <div class="sheet-actions">
         <button class="btn btn-ghost" id="shClose">Close</button>
-        <button class="btn btn-primary" id="shDrop" ${left?'':'disabled style="opacity:.5"'}>Kachunk ${left?'it':'—'} in</button>
+        <button class="btn btn-primary" id="shDrop" ${left?'':'disabled style="opacity:.5"'}>Kachunk it.</button>
       </div>`;
     Sheet.open(html);
     const sheetEl = $('#sheet'); if(sheetEl) sheetEl.dataset.bkId = bk.id;
@@ -2256,21 +2271,31 @@ const BucketSheet = {
         $('.bc-label', $('#sheet')).innerHTML = chunkLabel(today);
         const weekLine = $('#bsWeekLine'); if(weekLine){ const d2=droppedCount(c.id), l2=trayBlocks(c.id).length; weekLine.textContent = `${d2}/${c.goal} this week${l2?` · ${l2} on the floor`:''}`; }
       };
-      $('#chipPlus').onclick = ()=>{
+      /* set today's count to an exact point — fills up OR trims down; banks any blocks crossed on the way up */
+      const setChips = n=>{
         S.week.chips[bk.id] = S.week.chips[bk.id]||{};
-        const today = (S.week.chips[bk.id][dayKey()]||0);
-        if(today>=cfg.perDay) return;
-        S.week.chips[bk.id][dayKey()] = today+1; save(); sfx('tick'); paint();
-        if((today+1) % cfg.perBlock === 0){
-          const flew = Floor.flyIn(c.id, 1, 'chips');
+        const o = S.week.chips[bk.id][dayKey()]||0;
+        n = clamp(n, 0, cfg.perDay);
+        if(n===o) n = o-1; // tapping the last filled chunk un-fills it
+        if(n<0) n = 0;
+        S.week.chips[bk.id][dayKey()] = n; save();
+        const crossed = Math.floor(n/cfg.perBlock) - Math.floor(o/cfg.perBlock);
+        if(crossed>0){
+          const flew = Floor.flyIn(c.id, crossed, 'chips');
           toast(flew?V().chipDone:V().chipTick);
-        } else if(Math.random()<0.3) toast(V().chipTick,{ms:1200});
+        } else sfx('tick');
+        paint();
+      };
+      $$('.chip-cell', $('#sheet')).forEach((el,k)=>el.onclick = ()=>setChips(k+1));
+      $('#chipPlus').onclick = ()=>{
+        const today = (S.week.chips[bk.id]?.[dayKey()]||0);
+        if(today>=cfg.perDay) return;
+        setChips(today+1);
       };
       $('#chipMinus').onclick = ()=>{
-        S.week.chips[bk.id] = S.week.chips[bk.id]||{};
-        const today = (S.week.chips[bk.id][dayKey()]||0);
+        const today = (S.week.chips[bk.id]?.[dayKey()]||0);
         if(!today) return;
-        S.week.chips[bk.id][dayKey()] = today-1; save(); sfx('tick'); paint();
+        setChips(today-1);
       };
     }
   }

@@ -205,6 +205,11 @@ h1,h2,h3{font-family:"Bricolage Grotesque",system-ui,sans-serif; font-weight:700
 .be-lab{font-weight:700; font-size:14.5px; color:var(--ink); margin:18px 0 8px; line-height:1.3;}
 .be-name{font-style:italic; font-weight:800;} /* the bucket's own name, echoed in a question */
 .be-lab span{display:block; font-weight:400; font-size:12.5px; color:var(--muted); margin-top:2px;}
+/* settings-style groups in the bucket editor: header → quiet card → note, with real air */
+.be-group{margin-top:24px;}
+.be-group .be-lab{margin:0 0 10px;}
+.be-note{font-size:12.5px; color:var(--muted); padding:8px 4px 0; line-height:1.5;}
+#screen-onboard .bucket-card .be-note{color:#8B949B;}
 
 /* segmented control (icon ink) */
 .seg{display:flex; gap:6px; background:var(--inset); border-radius:12px; padding:4px; width:fit-content;}
@@ -241,22 +246,37 @@ h1,h2,h3{font-family:"Bricolage Grotesque",system-ui,sans-serif; font-weight:700
   flex:1; min-width:0; border:none; background:transparent; font:inherit; font-weight:600;
   color:var(--ink); outline:none; font-size:16px;
 }
-/* ── "How big is your block?" — the block itself is the control's readout ── */
-.size-pick{display:flex; align-items:center; justify-content:center; gap:10px; width:fit-content; margin:0 auto;}
+/* ── "How big is your block?" — a quiet settings-style card; the block is the readout ── */
+.size-pick{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  background:var(--inset); border-radius:16px; padding:12px 14px; width:100%;
+}
 .size-pick > button{
-  width:34px; height:34px; border-radius:12px; border:1px solid var(--hairline);
-  background:var(--surface); font-size:17px; font-weight:700; cursor:pointer; color:var(--ink);
+  width:38px; height:38px; border-radius:12px; border:none;
+  background:var(--surface); font-size:18px; font-weight:700; cursor:pointer; color:var(--ink);
   line-height:1; font-family:inherit; flex:none; align-self:center;
 }
-.size-pick > button:active{transform:translateY(1px); box-shadow:0 1px 0 var(--hairline);}
-.size-stage{display:flex; flex-direction:column; align-items:center; gap:0;}
-.size-stage canvas{width:96px; height:78px; display:block;}
+.size-pick > button:active{transform:translateY(1px); background:var(--hairline);}
+.size-stage{flex:1; display:flex; flex-direction:column; align-items:center; gap:0; min-width:0;}
+.size-stage canvas{width:150px; height:166px; display:block; max-width:100%;}
 .size-cap{font-size:12.5px; color:var(--muted); font-weight:700; margin-top:-2px;}
 #screen-settings .size-pick > button{border:none; box-shadow:none; background:var(--surface);}
-#screen-onboard.colored .size-pick > button{color:#33414D; background:#F1EEE7; border:none;}
+#screen-onboard.colored .size-pick{background:#F1EEE7;}
+#screen-onboard.colored .size-pick > button{color:#33414D; background:#FDFBF7; border:none;}
 #screen-onboard.colored .size-cap{color:#8B949B;}
 
 .stepper{display:flex; align-items:center; gap:2px; flex:none;}
+/* weekly stepper wears the same quiet card as the size control */
+.stepper-center{
+  width:100%; margin:0; gap:10px; justify-content:space-between;
+  background:var(--inset); border-radius:16px; padding:12px 14px;
+}
+.stepper-center > button{width:38px; height:38px; border:none; border-radius:12px; background:var(--surface); font-size:18px;}
+.stepper-center > button:active{transform:translateY(1px); background:var(--hairline); box-shadow:none;}
+.stepper-center .val{flex:1; text-align:center; font-size:19px;}
+#screen-onboard.colored .stepper-center{background:#F1EEE7;}
+#screen-onboard.colored .stepper-center > button{background:#FDFBF7; color:#33414D;}
+#screen-settings .stepper-center > button{background:var(--surface); border:none;}
 .stepper button{
   width:34px; height:34px; border-radius:12px; border:1px solid var(--hairline);
   background:var(--surface); font-size:17px; font-weight:700; cursor:pointer; color:var(--ink);
@@ -309,10 +329,10 @@ h1,h2,h3{font-family:"Bricolage Grotesque",system-ui,sans-serif; font-weight:700
 }
 .mode-card strong{font-size:13.5px; line-height:1.2; white-space:nowrap;}
 .mode-card span{font-size:11.5px; color:var(--muted); line-height:1.4;}
-.mode-card.on{border-color:var(--mark); background:rgba(221,124,84,.07);}
+.mode-card.on{border-color:var(--mark); background:var(--surface);}
 #screen-onboard.colored .mode-card{background:#F1EEE7; color:#33414D;}
 #screen-onboard.colored .mode-card span{color:#8B949B;}
-#screen-onboard.colored .mode-card.on{border-color:#DD7C54; background:#FFF3EC;}
+#screen-onboard.colored .mode-card.on{border-color:#DD7C54; background:#FDFBF7;}
 
 /* ── ongoing-habit quantity setup ── */
 .cc-row{margin-bottom:9px;}
@@ -446,6 +466,11 @@ html[data-theme="dark"] #screen-floor.board-live{--live-bg:#25333A;}
 @keyframes cbPop{from{transform:scale(.4) rotate(-4deg); opacity:0;}to{transform:scale(1) rotate(0);opacity:1;}}
 @keyframes cbFlash{0%{background:rgba(221,124,84,0);}8%{background:rgba(221,124,84,.18);}30%{background:rgba(221,124,84,.06);}100%{background:rgba(221,124,84,0);}}
 
+/* number-entry consistency: steppers inside sheets go quiet like settings */
+.sheet .stepper > button{border:none; background:var(--inset); box-shadow:none;}
+.sheet .stepper > button:active{transform:translateY(1px); background:var(--hairline);}
+.sheet .stepper-center > button{background:var(--surface);}
+
 /* ── add-entry modal ── */
 .el-day{
   display:flex; align-items:center; justify-content:space-between; gap:10px;
@@ -558,9 +583,10 @@ html[data-theme="dark"] #screen-floor.board-live{--live-bg:#25333A;}
 .bigcount .val{font-family:"Figtree",sans-serif;font-variant-numeric:tabular-nums; font-size:46px; min-width:80px; text-align:center;}
 .sheet-actions{display:flex; gap:10px; margin-top:14px;}
 .sheet-actions .btn{flex:1;}
-.chip-tally{display:flex; flex-wrap:wrap; gap:7px; margin:12px 0 4px;}
-.chip-cell{width:36px; height:36px; border-radius:12px; border:2px dashed var(--hairline); background:var(--inset);}
+.chip-tally{display:flex; flex-wrap:nowrap; gap:5px; margin:12px 0 4px;}
+.chip-cell{flex:1; min-width:0; height:32px; border-radius:10px; border:2px dashed var(--hairline); background:var(--inset); cursor:pointer; padding:0;}
 .chip-cell.on{background:var(--good); border:2px solid var(--good); }
+.chip-cell:active{transform:translateY(1px);}
 
 /* roundup flow */
 .ru-blockline{display:flex; align-items:center; gap:10px; margin:12px 0;}
@@ -797,3 +823,6 @@ html[data-theme="dark"] #screen-floor.board-live{--live-bg:#25333A;}
 }
 #screen-onboard.colored .fit-card.ok{border-color:rgba(143,182,148,.75) !important;}
 #screen-onboard.colored .fit-card.over{border-color:rgba(220,162,131,.75) !important;}
+
+/* size caption sits on the paper card — never inherit the tinted page's ink override */
+#screen-onboard .bucket-card .size-cap{color:#8B949B;}
